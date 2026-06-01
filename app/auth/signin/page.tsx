@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Printer, Eye, EyeOff, Globe } from 'lucide-react'
+import { Printer, Eye, EyeOff, Globe, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 
 const schema = z.object({
@@ -84,11 +84,17 @@ export default function SignInPage() {
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
           <div className="mb-8">
-            <Link href="/" className="flex items-center gap-2 mb-8 lg:hidden">
+            {/* Mobile logo */}
+            <Link href="/" className="flex items-center gap-2 mb-6 lg:hidden">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
                 <Printer className="w-4 h-4 text-white" />
               </div>
               <span className="font-bold text-violet-900">DPM Printing Center</span>
+            </Link>
+            {/* Back to Home button */}
+            <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-violet-600 transition-colors mb-6 group">
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              Back to Home
             </Link>
             <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Sign In</h1>
             <p className="text-gray-500">Enter your credentials to access your account</p>
