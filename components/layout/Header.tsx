@@ -17,8 +17,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import {
-  Printer, ShoppingCart, Menu, User, LogOut, Settings,
-  Package, Palette, Home, Info, Phone, Layers,
+  Printer, ShoppingCart, Menu, LogOut,
+  Package, Home, Info, Phone, Layers,
+  LayoutDashboard,
 } from 'lucide-react'
 
 const navLinks = [
@@ -41,9 +42,16 @@ export default function Header() {
     return '/customer'
   }
 
+  const getRoleBadgeColor = () => {
+    if (user?.role === 'admin') return 'bg-red-500/20 text-red-300 border-red-500/30'
+    if (user?.role === 'designer') return 'bg-orange-500/20 text-orange-300 border-orange-500/30'
+    return 'bg-green-500/20 text-green-300 border-green-500/30'
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-gradient-to-r from-violet-950/95 via-purple-900/95 to-violet-950/95 backdrop-blur-md shadow-lg">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
             <Printer className="w-5 h-5 text-white" />
@@ -54,6 +62,7 @@ export default function Header() {
           </div>
         </Link>
 
+        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-1">
           {navLinks.map(link => (
             <Link
@@ -66,7 +75,9 @@ export default function Header() {
           ))}
         </nav>
 
+        {/* Right Actions */}
         <div className="flex items-center gap-2">
+          {/* Cart */}
           <Link href="/cart">
             <Button variant="ghost" size="icon" className="relative text-violet-200 hover:text-white hover:bg-white/10">
               <ShoppingCart className="w-5 h-5" />
@@ -79,43 +90,56 @@ export default function Header() {
           </Link>
 
           {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={<Button variant="ghost" size="icon" className="text-violet-200 hover:text-white hover:bg-white/10" />}
-              >
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-xs font-bold">
-                    {user.name?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>
-                  <div className="font-semibold">{user.name}</div>
-                  <div className="text-xs text-muted-foreground capitalize">{user.role}</div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {getDashboardLink() && (
+            <>
+              {/* Dashboard button — visible, routes by role */}
+              <Link href={getDashboardLink()!} className="hidden sm:block">
+                <Button
+                  size="sm"
+                  className="bg-orange-500 hover:bg-orange-600 text-white border-0 shadow-md gap-1.5 font-semibold"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  Dashboard
+                </Button>
+              </Link>
+
+              {/* User dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={<Button variant="ghost" size="icon" className="text-violet-200 hover:text-white hover:bg-white/10" />}
+                >
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-xs font-bold">
+                      {user.name?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel>
+                    <div className="font-semibold">{user.name}</div>
+                    <div className="text-xs text-muted-foreground">{user.email}</div>
+                    <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full border capitalize font-medium ${getRoleBadgeColor()}`}>
+                      {user.role}
+                    </span>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     render={<Link href={getDashboardLink()!} />}
-                    className="flex items-center gap-2 cursor-pointer"
+                    className="flex items-center gap-2 cursor-pointer font-medium"
                   >
-                    {user.role === 'admin' ? <Settings className="w-4 h-4" /> :
-                     user.role === 'designer' ? <Palette className="w-4 h-4" /> :
-                     <User className="w-4 h-4" />}
+                    <LayoutDashboard className="w-4 h-4" />
                     Dashboard
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="text-red-600 flex items-center gap-2 cursor-pointer"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className="text-red-600 flex items-center gap-2 cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : (
             <div className="hidden sm:flex items-center gap-2">
               <Link href="/auth/signin">
@@ -131,6 +155,7 @@ export default function Header() {
             </div>
           )}
 
+          {/* Mobile Menu */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger
               render={<Button variant="ghost" size="icon" className="md:hidden text-violet-200 hover:text-white hover:bg-white/10" />}
@@ -144,6 +169,28 @@ export default function Header() {
                 </div>
                 <span className="font-bold text-lg">DPM Printing</span>
               </div>
+
+              {/* Mobile user info */}
+              {user && (
+                <div className="mb-4 p-3 bg-white/10 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                      {user.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-white font-semibold text-sm truncate">{user.name}</div>
+                      <div className="text-violet-300 text-xs capitalize">{user.role}</div>
+                    </div>
+                  </div>
+                  <Link href={getDashboardLink()!} onClick={() => setMobileOpen(false)}>
+                    <Button className="w-full mt-3 bg-orange-500 hover:bg-orange-600 text-white gap-2 text-sm">
+                      <LayoutDashboard className="w-4 h-4" />
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                </div>
+              )}
+
               <nav className="flex flex-col gap-1">
                 {navLinks.map(link => (
                   <Link
@@ -156,17 +203,26 @@ export default function Header() {
                     {link.label}
                   </Link>
                 ))}
-                {!user && (
-                  <div className="mt-4 flex flex-col gap-2">
-                    <Link href="/auth/signin" onClick={() => setMobileOpen(false)}>
-                      <Button variant="outline" className="w-full border-white/30 text-white hover:bg-white/10">Sign In</Button>
-                    </Link>
-                    <Link href="/auth/signup" onClick={() => setMobileOpen(false)}>
-                      <Button className="w-full bg-gradient-to-r from-orange-500 to-pink-500">Sign Up</Button>
-                    </Link>
-                  </div>
-                )}
               </nav>
+
+              {!user ? (
+                <div className="mt-6 flex flex-col gap-2">
+                  <Link href="/auth/signin" onClick={() => setMobileOpen(false)}>
+                    <Button variant="outline" className="w-full border-white/30 text-white hover:bg-white/10">Sign In</Button>
+                  </Link>
+                  <Link href="/auth/signup" onClick={() => setMobileOpen(false)}>
+                    <Button className="w-full bg-gradient-to-r from-orange-500 to-pink-500">Sign Up</Button>
+                  </Link>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { logout(); setMobileOpen(false) }}
+                  className="mt-6 flex items-center gap-3 w-full px-3 py-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all text-sm font-medium"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              )}
             </SheetContent>
           </Sheet>
         </div>

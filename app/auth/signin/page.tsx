@@ -41,7 +41,7 @@ export default function SignInPage() {
   const handleGoogle = async () => {
     setGoogleLoading(true)
     try {
-      await signInWithGoogle()
+      await signInWithGoogle('customer')
       toast.success('Welcome back!')
       router.push('/')
     } catch (err: any) {
