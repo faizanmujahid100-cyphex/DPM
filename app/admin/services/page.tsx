@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, Pencil, Trash2, Layers, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 import ImageUpload from '@/components/ui/ImageUpload'
-import Image from 'next/image'
+import CloudImg from '@/components/ui/CloudImg'
 
 const statusColors: Record<string, string> = {
   submitted: 'bg-yellow-100 text-yellow-700',
@@ -143,7 +143,7 @@ export default function AdminServicesPage() {
               <div key={s.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="relative h-32 bg-gradient-to-br from-violet-100 to-purple-100">
                   {s.imageUrl ? (
-                    <Image src={s.imageUrl} alt={s.name} fill className="object-cover" />
+                    <CloudImg src={s.imageUrl} alt={s.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="flex items-center justify-center h-full">
                       <Layers className="w-10 h-10 text-violet-300" />

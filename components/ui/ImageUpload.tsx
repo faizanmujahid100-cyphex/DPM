@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { CldUploadWidget, CloudinaryUploadWidgetResults } from 'next-cloudinary'
 import { Upload, X, ImageIcon, Loader2 } from 'lucide-react'
-import Image from 'next/image'
 
 interface ImageUploadProps {
   value: string
@@ -45,36 +44,24 @@ function UploadButton({ onSuccess, folder, children }: {
   )
 }
 
-export default function ImageUpload({
-  value,
-  onChange,
-  label = 'Upload Image',
-  folder = 'dpm',
-}: ImageUploadProps) {
+export default function ImageUpload({ value, onChange, label = 'Upload Image', folder = 'dpm' }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
 
   if (value) {
     return (
       <div className="relative w-full h-48 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 group">
-        <Image src={value} alt="Uploaded image" fill className="object-cover" unoptimized />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={value} alt="Uploaded" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
           <UploadButton folder={folder} onSuccess={url => onChange(url)}>
             {open => (
-              <button
-                type="button"
-                onClick={open}
-                className="flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
-              >
+              <button type="button" onClick={open} className="flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
                 <Upload className="w-4 h-4" />
                 Change
               </button>
             )}
           </UploadButton>
-          <button
-            type="button"
-            onClick={() => onChange('')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
-          >
+          <button type="button" onClick={() => onChange('')} className="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors">
             <X className="w-4 h-4" />
             Remove
           </button>
@@ -84,10 +71,7 @@ export default function ImageUpload({
   }
 
   return (
-    <UploadButton
-      folder={folder}
-      onSuccess={url => { onChange(url); setUploading(false) }}
-    >
+    <UploadButton folder={folder} onSuccess={url => { onChange(url); setUploading(false) }}>
       {open => (
         <button
           type="button"

@@ -1,18 +1,32 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowRight, FileText, PenTool, Type, Layers, Camera, Globe } from 'lucide-react'
-
-const services = [
-  { name: 'Logo & Brand Design', desc: 'Professional logos and complete brand identity kits', icon: PenTool, color: 'bg-violet-100 text-violet-600' },
-  { name: 'Typing & Data Entry', desc: 'Fast and accurate typing for documents and data', icon: Type, color: 'bg-orange-100 text-orange-600' },
-  { name: 'Certificate Design', desc: 'Custom certificate and award design services', icon: FileText, color: 'bg-green-100 text-green-600' },
-  { name: 'Brochure & Flyer', desc: 'Eye-catching marketing material design', icon: Layers, color: 'bg-blue-100 text-blue-600' },
-  { name: 'Photo Editing', desc: 'Professional photo retouching and manipulation', icon: Camera, color: 'bg-pink-100 text-pink-600' },
-  { name: 'Social Media Design', desc: 'Engaging posts, stories and banner designs', icon: Globe, color: 'bg-yellow-100 text-yellow-600' },
-]
+import CloudImg from '@/components/ui/CloudImg'
+import { getServices } from '@/lib/firestore'
+import { Service } from '@/types'
+import { ArrowRight, Clock, Layers } from 'lucide-react'
 
 export default function ServicesPreview() {
+  const [services, setServices] = useState<Service[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getServices().then(all => setServices(all.slice(0, 6))).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return (
+    <section className="py-20 bg-gradient-to-br from-violet-50 via-purple-50 to-white">
+      <div className="container mx-auto px-4 flex justify-center">
+        <div className="w-8 h-8 border-2 border-violet-300 border-t-violet-600 rounded-full animate-spin" />
+      </div>
+    </section>
+  )
+
+  if (services.length === 0) return null
+
   return (
     <section className="py-20 bg-gradient-to-br from-violet-50 via-purple-50 to-white">
       <div className="container mx-auto px-4">
@@ -25,14 +39,25 @@ export default function ServicesPreview() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
-          {services.map(({ name, desc, icon: Icon, color }) => (
-            <div key={name} className="flex items-start gap-4 bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all group">
-              <div className={`w-11 h-11 rounded-xl ${color} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
-                <Icon className="w-5 h-5" />
+          {services.map(service => (
+            <div key={service.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+              <div className="relative h-36 bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+                <CloudImg
+                  src={service.imageUrl}
+                  alt={service.name}
+                  className="w-full h-full object-cover"
+                  fallback={<Layers className="w-12 h-12 text-white/50" />}
+                />
+                <div className="absolute bottom-2 right-2">
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-black/40 backdrop-blur-sm text-white text-xs rounded-full">
+                    <Clock className="w-3 h-3" /> {service.turnaround}
+                  </span>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">{name}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+              <div className="p-4">
+                <h3 className="font-semibold text-gray-900 mb-1">{service.name}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed mb-3 line-clamp-2">{service.description}</p>
+                <div className="text-violet-700 font-bold text-sm">PKR {service.price.toLocaleString()}</div>
               </div>
             </div>
           ))}

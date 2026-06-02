@@ -1,18 +1,56 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowRight, Frame, Coffee, Shirt, Flag, CreditCard, Bookmark } from 'lucide-react'
+import CloudImg from '@/components/ui/CloudImg'
+import { useCart } from '@/contexts/CartContext'
+import { getProducts } from '@/lib/firestore'
+import { Product } from '@/types'
+import { ArrowRight, ShoppingCart, Package } from 'lucide-react'
+import { toast } from 'sonner'
 
-const products = [
-  { name: 'Photo Frame Prints', desc: 'High-quality custom photo frames for every occasion', price: 'From PKR 350', icon: Frame, color: 'from-violet-500 to-purple-600', tag: 'Popular' },
-  { name: 'Custom Mug Prints', desc: 'Personalized mugs perfect for gifts and branding', price: 'From PKR 250', icon: Coffee, color: 'from-orange-500 to-amber-600', tag: 'Bestseller' },
-  { name: 'T-Shirt Printing', desc: 'Full-color custom shirt printing for all sizes', price: 'From PKR 800', icon: Shirt, color: 'from-pink-500 to-rose-600', tag: 'New' },
-  { name: 'Banner & Flex', desc: 'Large format printing for events and advertising', price: 'From PKR 500/sqft', icon: Flag, color: 'from-green-500 to-teal-600', tag: '' },
-  { name: 'Business Cards', desc: 'Professional business cards with premium finish', price: 'From PKR 200/100pcs', icon: CreditCard, color: 'from-blue-500 to-indigo-600', tag: 'Popular' },
-  { name: 'Stickers & Labels', desc: 'Custom die-cut stickers and product labels', price: 'From PKR 150', icon: Bookmark, color: 'from-red-500 to-orange-600', tag: '' },
-]
+const gradients: Record<string, string> = {
+  'photo-frame': 'from-violet-500 to-purple-600',
+  'mug': 'from-orange-500 to-amber-600',
+  'shirt': 'from-pink-500 to-rose-600',
+  'banner': 'from-green-500 to-teal-600',
+  'business-card': 'from-blue-500 to-indigo-600',
+  'sticker': 'from-red-500 to-orange-600',
+  'custom': 'from-cyan-500 to-blue-600',
+}
 
 export default function FeaturedProducts() {
+  const { addItem } = useCart()
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getProducts()
+      .then(all => {
+        const featured = all.filter(p => p.inStock)
+        setProducts(featured.slice(0, 6))
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return (
+    <section className="py-20 bg-white">
+      <div className="container mx-auto px-4 flex justify-center">
+        <div className="w-8 h-8 border-2 border-violet-300 border-t-violet-600 rounded-full animate-spin" />
+      </div>
+    </section>
+  )
+
+  if (products.length === 0) return null
+
+  const handleAddToCart = (product: Product) => {
+    addItem({ productId: product.id, productName: product.name, price: product.price, quantity: 1, imageUrl: product.imageUrl, category: product.category })
+    toast.success(`${product.name} added to cart!`)
+  }
+
   return (
     <section className="py-20 bg-white">
       <div className="container mx-auto px-4">
@@ -25,20 +63,30 @@ export default function FeaturedProducts() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-          {products.map(({ name, desc, price, icon: Icon, color, tag }) => (
-            <div key={name} className="group relative bg-gray-50 rounded-2xl p-6 hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1 overflow-hidden">
-              <div className="absolute top-0 right-0 w-28 h-28 opacity-5 -translate-y-4 translate-x-4">
-                <Icon className="w-full h-full" />
+          {products.map(product => (
+            <div key={product.id} className="group bg-gray-50 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1 flex flex-col">
+              <div className={`relative h-44 bg-gradient-to-br ${gradients[product.category] ?? 'from-violet-500 to-purple-600'} flex items-center justify-center`}>
+                <CloudImg
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                  fallback={<Package className="w-14 h-14 text-white/50" />}
+                />
+                {product.featured && (
+                  <Badge className="absolute top-3 left-3 bg-orange-500 text-white border-0 shadow">Featured</Badge>
+                )}
               </div>
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center mb-4 shadow-lg`}>
-                <Icon className="w-6 h-6 text-white" />
+              <div className="p-5 flex flex-col flex-1">
+                <div className="text-xs text-gray-400 capitalize mb-1">{product.category.replace('-', ' ')}</div>
+                <h3 className="font-bold text-gray-900 mb-1">{product.name}</h3>
+                <p className="text-gray-500 text-sm mb-4 flex-1 line-clamp-2">{product.description}</p>
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                  <div className="text-violet-700 font-bold">PKR {product.price.toLocaleString()}</div>
+                  <Button size="sm" onClick={() => handleAddToCart(product)} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
+                    <ShoppingCart className="w-3.5 h-3.5" /> Add
+                  </Button>
+                </div>
               </div>
-              {tag && (
-                <Badge className="mb-2 text-xs bg-orange-100 text-orange-600 border-orange-200">{tag}</Badge>
-              )}
-              <h3 className="font-bold text-gray-900 text-lg mb-1">{name}</h3>
-              <p className="text-gray-500 text-sm mb-3 leading-relaxed">{desc}</p>
-              <p className="text-violet-700 font-semibold text-sm">{price}</p>
             </div>
           ))}
         </div>
