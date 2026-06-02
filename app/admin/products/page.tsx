@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import ImageUpload from '@/components/ui/ImageUpload'
 import { Plus, Pencil, Trash2, Package } from 'lucide-react'
 import { toast } from 'sonner'
+import Image from 'next/image'
 
 const categories: ProductCategory[] = ['photo-frame', 'mug', 'shirt', 'banner', 'business-card', 'sticker', 'custom']
 const defaultForm = { name: '', category: 'custom' as ProductCategory, price: '', description: '', imageUrl: '', inStock: true, featured: false }
@@ -25,7 +27,18 @@ function ProductForm({ form, setForm, onSubmit, onCancel, loading }: {
   loading: boolean
 }) {
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+      {/* Image Upload */}
+      <div className="space-y-1.5">
+        <Label>Product Image</Label>
+        <ImageUpload
+          value={form.imageUrl}
+          onChange={url => setForm(p => ({ ...p, imageUrl: url }))}
+          label="Upload Product Image"
+          folder="dpm/products"
+        />
+      </div>
+
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label>Product Name *</Label>
@@ -41,20 +54,17 @@ function ProductForm({ form, setForm, onSubmit, onCancel, loading }: {
           </Select>
         </div>
       </div>
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>Price (PKR) *</Label>
-          <Input type="number" placeholder="350" required value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Image URL</Label>
-          <Input placeholder="https://..." value={form.imageUrl} onChange={e => setForm(p => ({ ...p, imageUrl: e.target.value }))} />
-        </div>
+
+      <div className="space-y-1.5">
+        <Label>Price (PKR) *</Label>
+        <Input type="number" placeholder="350" required value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
       </div>
+
       <div className="space-y-1.5">
         <Label>Description *</Label>
         <Textarea placeholder="Describe the product..." rows={3} required value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
       </div>
+
       <div className="flex gap-6">
         <div className="flex items-center gap-2">
           <Switch checked={form.inStock} onCheckedChange={v => setForm(p => ({ ...p, inStock: v }))} />
@@ -65,6 +75,7 @@ function ProductForm({ form, setForm, onSubmit, onCancel, loading }: {
           <Label>Featured</Label>
         </div>
       </div>
+
       <div className="flex gap-2">
         <Button type="submit" disabled={loading} className="flex-1 bg-violet-600 hover:bg-violet-700 text-white">
           {loading ? 'Saving...' : 'Save Product'}
@@ -141,33 +152,39 @@ export default function AdminProductsPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {products.map(product => (
-          <div key={product.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
-                <Package className="w-5 h-5 text-violet-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-gray-900 truncate">{product.name}</div>
-                <div className="text-xs text-gray-400 capitalize">{product.category.replace('-', ' ')}</div>
-              </div>
-            </div>
-            <p className="text-gray-500 text-xs leading-relaxed mb-3 line-clamp-2">{product.description}</p>
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-violet-700 font-bold">PKR {product.price.toLocaleString()}</div>
-              <div className="flex gap-1">
-                {product.featured && <Badge className="bg-orange-100 text-orange-600 border-orange-200 text-xs">Featured</Badge>}
-                <Badge className={product.inStock ? 'bg-green-100 text-green-600 border-green-200 text-xs' : 'bg-red-100 text-red-600 border-red-200 text-xs'}>
-                  {product.inStock ? 'In Stock' : 'Out of Stock'}
+          <div key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            {/* Product image */}
+            <div className="relative h-40 bg-gradient-to-br from-violet-100 to-purple-100">
+              {product.imageUrl ? (
+                <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <Package className="w-12 h-12 text-violet-300" />
+                </div>
+              )}
+              <div className="absolute top-2 right-2 flex gap-1">
+                {product.featured && <Badge className="bg-orange-500 text-white border-0 text-xs shadow-md">Featured</Badge>}
+                <Badge className={product.inStock ? 'bg-green-500 text-white border-0 text-xs shadow-md' : 'bg-red-500 text-white border-0 text-xs shadow-md'}>
+                  {product.inStock ? 'In Stock' : 'Out'}
                 </Badge>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => openEdit(product)}>
-                <Pencil className="w-3 h-3" /> Edit
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleDelete(product.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200">
-                <Trash2 className="w-3 h-3" />
-              </Button>
+
+            <div className="p-4">
+              <div className="font-bold text-gray-900 truncate mb-0.5">{product.name}</div>
+              <div className="text-xs text-gray-400 capitalize mb-2">{product.category.replace('-', ' ')}</div>
+              <p className="text-gray-500 text-xs leading-relaxed mb-3 line-clamp-2">{product.description}</p>
+              <div className="flex items-center justify-between">
+                <div className="text-violet-700 font-bold">PKR {product.price.toLocaleString()}</div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => openEdit(product)}>
+                    <Pencil className="w-3 h-3" /> Edit
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDelete(product.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200">
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         ))}

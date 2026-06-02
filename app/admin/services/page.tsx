@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, Pencil, Trash2, Layers, Clock } from 'lucide-react'
 import { toast } from 'sonner'
+import ImageUpload from '@/components/ui/ImageUpload'
+import Image from 'next/image'
 
 const statusColors: Record<string, string> = {
   submitted: 'bg-yellow-100 text-yellow-700',
@@ -90,7 +92,16 @@ export default function AdminServicesPage() {
   }
 
   const ServiceForm = ({ onSubmit }: { onSubmit: (e: React.FormEvent) => Promise<void> }) => (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+      <div className="space-y-1.5">
+        <Label>Service Image</Label>
+        <ImageUpload
+          value={form.imageUrl}
+          onChange={url => setForm(p => ({ ...p, imageUrl: url }))}
+          label="Upload Service Image"
+          folder="dpm/services"
+        />
+      </div>
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5"><Label>Service Name *</Label><Input required placeholder="Logo Design" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} /></div>
         <div className="space-y-1.5"><Label>Price (PKR) *</Label><Input required type="number" placeholder="1500" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} /></div>
@@ -129,11 +140,18 @@ export default function AdminServicesPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {services.map(s => (
-              <div key={s.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <div className="flex items-start gap-3 mb-2">
-                  <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
-                    <Layers className="w-4 h-4 text-violet-600" />
-                  </div>
+              <div key={s.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="relative h-32 bg-gradient-to-br from-violet-100 to-purple-100">
+                  {s.imageUrl ? (
+                    <Image src={s.imageUrl} alt={s.name} fill className="object-cover" />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <Layers className="w-10 h-10 text-violet-300" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                <div className="flex items-start gap-2 mb-2">
                   <div>
                     <div className="font-bold text-gray-900 text-sm">{s.name}</div>
                     <div className="text-xs text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" />{s.turnaround}</div>
@@ -151,6 +169,7 @@ export default function AdminServicesPage() {
                   <Button variant="outline" size="sm" onClick={() => handleDelete(s.id)} className="text-red-500 hover:bg-red-50 border-red-200">
                     <Trash2 className="w-3 h-3" />
                   </Button>
+                </div>
                 </div>
               </div>
             ))}
