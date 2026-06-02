@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Printer, ShoppingBag, User, Layers, Home, LogOut, Menu, X } from 'lucide-react'
+import { Printer, ShoppingBag, User, Layers, Home, LogOut, Menu, X, Settings, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const navItems = [
@@ -57,7 +57,15 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             </Link>
           ))}
         </nav>
-        <div className="absolute bottom-6 left-4 right-4">
+        <div className="absolute bottom-6 left-4 right-4 space-y-1">
+          <Link href="/" className="flex items-center gap-3 w-full px-3 py-2.5 text-gray-500 hover:text-violet-700 hover:bg-violet-50 rounded-xl transition-all text-sm font-medium">
+            <Globe className="w-4 h-4" />
+            Back to Site
+          </Link>
+          <Link href="/profile" className="flex items-center gap-3 w-full px-3 py-2.5 text-gray-500 hover:text-violet-700 hover:bg-violet-50 rounded-xl transition-all text-sm font-medium">
+            <Settings className="w-4 h-4" />
+            Profile & Settings
+          </Link>
           <button
             onClick={logout}
             className="flex items-center gap-3 w-full px-3 py-2.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all text-sm font-medium"

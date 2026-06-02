@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Printer, LayoutDashboard, Package, ShoppingBag, Users, Layers, LogOut, Menu, X } from 'lucide-react'
+import { Printer, LayoutDashboard, Package, ShoppingBag, Users, Layers, LogOut, Menu, X, Home, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const navItems = [
@@ -63,7 +63,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
           ))}
         </nav>
-        <div className="absolute bottom-6 left-4 right-4">
+        <div className="absolute bottom-6 left-4 right-4 space-y-1">
+          <Link href="/" className="flex items-center gap-3 w-full px-3 py-2.5 text-violet-300 hover:text-white hover:bg-white/10 rounded-xl transition-all text-sm font-medium">
+            <Home className="w-4 h-4" />
+            Back to Site
+          </Link>
+          <Link href="/profile" className="flex items-center gap-3 w-full px-3 py-2.5 text-violet-300 hover:text-white hover:bg-white/10 rounded-xl transition-all text-sm font-medium">
+            <Settings className="w-4 h-4" />
+            Profile & Settings
+          </Link>
           <button
             onClick={logout}
             className="flex items-center gap-3 w-full px-3 py-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all text-sm font-medium"
