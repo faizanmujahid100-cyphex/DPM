@@ -13,10 +13,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
 import {
   User, Mail, Phone, Save, Lock, LogOut,
   Eye, EyeOff, ShieldCheck, AlertCircle,
-  ArrowLeft, LayoutDashboard,
+  ArrowLeft, LayoutDashboard, Users, MessageCircle, MapPin,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -27,7 +28,10 @@ export default function ProfilePage() {
   const router = useRouter()
 
   const [name, setName] = useState('')
+  const [fatherName, setFatherName] = useState('')
   const [phone, setPhone] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
+  const [address, setAddress] = useState('')
   const [saving, setSaving] = useState(false)
 
   const [currentPassword, setCurrentPassword] = useState('')
@@ -41,7 +45,10 @@ export default function ProfilePage() {
     if (!loading && !user) router.replace('/auth/signin')
     if (user) {
       setName(user.name || '')
+      setFatherName(user.fatherName || '')
       setPhone(user.phone || '')
+      setWhatsapp(user.whatsapp || '')
+      setAddress(user.address || '')
     }
   }, [user, loading, router])
 
@@ -59,7 +66,7 @@ export default function ProfilePage() {
     if (!user) return
     setSaving(true)
     try {
-      await updateUser(user.uid, { name, phone })
+      await updateUser(user.uid, { name, fatherName: fatherName || undefined, phone, whatsapp: whatsapp || undefined, address: address || undefined, profileComplete: !!(phone && address) })
       toast.success('Profile updated successfully!')
     } catch {
       toast.error('Failed to update profile.')
@@ -144,10 +151,16 @@ export default function ProfilePage() {
 
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="name" className="flex items-center gap-1.5 text-sm font-medium">
-                  <User className="w-3.5 h-3.5 text-violet-500" /> Full Name
+                <Label className="flex items-center gap-1.5 text-sm font-medium">
+                  <User className="w-3.5 h-3.5 text-violet-500" /> Full Name *
                 </Label>
-                <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" required />
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5 text-sm font-medium">
+                  <Users className="w-3.5 h-3.5 text-violet-500" /> Father&apos;s Name
+                </Label>
+                <Input value={fatherName} onChange={e => setFatherName(e.target.value)} placeholder="Optional" />
               </div>
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5 text-sm font-medium">
@@ -156,11 +169,25 @@ export default function ProfilePage() {
                 <Input value={user.email || ''} disabled className="bg-gray-50 text-gray-400" />
                 <p className="text-xs text-gray-400">Email cannot be changed.</p>
               </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-1.5 text-sm font-medium">
+                    <Phone className="w-3.5 h-3.5 text-violet-500" /> Phone Number
+                  </Label>
+                  <Input type="tel" maxLength={11} value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="03xxxxxxxxx" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-1.5 text-sm font-medium">
+                    <MessageCircle className="w-3.5 h-3.5 text-green-500" /> WhatsApp
+                  </Label>
+                  <Input type="tel" maxLength={11} value={whatsapp} onChange={e => setWhatsapp(e.target.value.replace(/\D/g, ''))} placeholder="03xxxxxxxxx" />
+                </div>
+              </div>
               <div className="space-y-1.5">
-                <Label htmlFor="phone" className="flex items-center gap-1.5 text-sm font-medium">
-                  <Phone className="w-3.5 h-3.5 text-violet-500" /> Phone Number
+                <Label className="flex items-center gap-1.5 text-sm font-medium">
+                  <MapPin className="w-3.5 h-3.5 text-violet-500" /> Delivery Address
                 </Label>
-                <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+92 300 0000000" />
+                <Textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="Full address with city" rows={2} />
               </div>
               <Button type="submit" disabled={saving} className="w-full bg-violet-600 hover:bg-violet-700 text-white gap-2">
                 <Save className="w-4 h-4" />

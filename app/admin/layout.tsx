@@ -4,12 +4,13 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Printer, LayoutDashboard, Package, ShoppingBag, Users, Layers, LogOut, Menu, X, Home, Settings, Tag } from 'lucide-react'
+import { Printer, LayoutDashboard, Package, ShoppingBag, Users, Layers, LogOut, Menu, X, Home, Settings, Tag, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
+  { href: '/admin/order-form', label: 'Order Form', icon: ClipboardList },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/services', label: 'Services', icon: Layers },

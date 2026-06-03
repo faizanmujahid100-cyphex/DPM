@@ -110,10 +110,10 @@ export default function CustomerOrdersPage() {
                     Designer: <strong className="text-gray-700">{order.designerName}</strong>
                   </div>
                 )}
-                {order.shippingAddress && (
+                {order.formData?.address && (
                   <div className="flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
-                    {order.shippingAddress}
+                    {order.formData.address}
                   </div>
                 )}
                 {order.notes && (

@@ -1,41 +1,97 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import MainLayout from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { createOrder } from '@/lib/firestore'
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react'
+import { createOrder, getOrderFormFields } from '@/lib/firestore'
+import { OrderFormField } from '@/types'
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState as useLocalState } from 'react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, total } = useCart()
-  const { user } = useAuth()
+  const { user, needsProfileComplete } = useAuth()
   const router = useRouter()
-  const [address, setAddress] = useState('')
-  const [notes, setNotes] = useState('')
+
+  const [formFields, setFormFields] = useState<OrderFormField[]>([])
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
   const [placing, setPlacing] = useState(false)
+
+  useEffect(() => {
+    getOrderFormFields().then(fields => {
+      const active = fields.filter(f => f.active)
+      setFormFields(active)
+      // Auto-fill from user profile
+      if (user) {
+        const profileData: Record<string, string> = {
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          whatsapp: user.whatsapp || '',
+          fatherName: user.fatherName || '',
+          address: user.address || '',
+        }
+        const prefilled: Record<string, string> = {}
+        active.forEach(f => {
+          if (f.autoFillKey && profileData[f.autoFillKey]) {
+            prefilled[f.key] = profileData[f.autoFillKey]
+          }
+        })
+        setFieldValues(prefilled)
+      }
+    }).catch(() => {})
+  }, [user])
+
+  const handleFieldChange = (key: string, value: string) => {
+    setFieldValues(prev => ({ ...prev, [key]: value }))
+  }
+
+  const validate = () => {
+    for (const field of formFields) {
+      if (!field.active) continue
+      const val = (fieldValues[field.key] || '').trim()
+      if (field.required && !val) {
+        toast.error(`"${field.label}" is required.`)
+        return false
+      }
+      if (val && field.minLength && val.length < field.minLength) {
+        toast.error(`"${field.label}" must be at least ${field.minLength} characters.`)
+        return false
+      }
+      if (val && field.maxLength && val.length > field.maxLength) {
+        toast.error(`"${field.label}" must be at most ${field.maxLength} characters.`)
+        return false
+      }
+    }
+    return true
+  }
 
   const handlePlaceOrder = async () => {
     if (!user) { router.push('/auth/signin'); return }
+    if (needsProfileComplete) { router.push('/auth/complete-profile'); return }
     if (items.length === 0) { toast.error('Your cart is empty.'); return }
+    if (!validate()) return
+
     setPlacing(true)
     try {
-      const orderId = await createOrder({
+      await createOrder({
         customerId: user.uid,
-        customerName: user.name,
-        customerEmail: user.email,
+        customerName: fieldValues['name'] || user.name,
+        customerEmail: fieldValues['email'] || user.email,
         items,
         total,
         status: 'awaiting_bid',
-        shippingAddress: address,
-        notes,
+        formData: fieldValues,
       })
       clearCart()
       toast.success('Order placed! A designer will be assigned soon.')
@@ -71,75 +127,99 @@ export default function CartPage() {
       <section className="py-12 bg-gray-50 min-h-[70vh]">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+
+          {/* Profile incomplete banner */}
+          {user && needsProfileComplete && (
+            <div className="mb-6 flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-xl text-sm text-orange-700">
+              <AlertCircle className="w-5 h-5 shrink-0 text-orange-500" />
+              <span>Please <Link href="/auth/complete-profile" className="underline font-semibold">complete your profile</Link> before placing an order. We need your phone and address details.</span>
+            </div>
+          )}
+
           <div className="grid lg:grid-cols-3 gap-8">
+            {/* Cart items */}
             <div className="lg:col-span-2 space-y-4">
               {items.map(item => (
                 <div key={item.productId} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
                   <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0">
-                    <ShoppingBag className="w-8 h-8 text-white" />
+                    {item.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover rounded-xl" />
+                    ) : (
+                      <ShoppingBag className="w-8 h-8 text-white" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900">{item.productName}</h3>
+                    <h3 className="font-semibold text-gray-900 truncate">{item.productName}</h3>
                     <p className="text-violet-700 font-bold">PKR {item.price.toLocaleString()}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => updateQuantity(item.productId, item.quantity - 1)}>
+                    <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50">
                       <Minus className="w-3 h-3" />
-                    </Button>
-                    <span className="w-8 text-center font-semibold">{item.quantity}</span>
-                    <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => updateQuantity(item.productId, item.quantity + 1)}>
+                    </button>
+                    <span className="w-8 text-center font-semibold text-sm">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50">
                       <Plus className="w-3 h-3" />
-                    </Button>
+                    </button>
                   </div>
                   <div className="text-right min-w-[80px]">
                     <p className="font-bold text-gray-900">PKR {(item.price * item.quantity).toLocaleString()}</p>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => removeItem(item.productId)} className="text-red-400 hover:text-red-600 hover:bg-red-50">
+                  <button onClick={() => removeItem(item.productId)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                     <Trash2 className="w-4 h-4" />
-                  </Button>
+                  </button>
                 </div>
               ))}
             </div>
 
+            {/* Order form + summary */}
             <div className="space-y-4">
+              {/* Order summary */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h2>
                 <div className="space-y-2 mb-4">
                   {items.map(item => (
                     <div key={item.productId} className="flex justify-between text-sm text-gray-600">
-                      <span>{item.productName} x{item.quantity}</span>
+                      <span>{item.productName} ×{item.quantity}</span>
                       <span>PKR {(item.price * item.quantity).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
-                <Separator className="my-4" />
+                <Separator className="my-3" />
                 <div className="flex justify-between font-bold text-lg text-gray-900">
                   <span>Total</span>
                   <span className="text-violet-700">PKR {total.toLocaleString()}</span>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
-                <h2 className="text-lg font-bold text-gray-900">Delivery Details</h2>
-                <div className="space-y-1.5">
-                  <Label>Shipping Address</Label>
-                  <Input placeholder="Your full address" value={address} onChange={e => setAddress(e.target.value)} />
+              {/* Dynamic order form */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h2 className="text-lg font-bold text-gray-900 mb-1">Order Details</h2>
+                <p className="text-gray-400 text-xs mb-5">Fields marked with * are required</p>
+
+                <div className="space-y-4">
+                  {formFields.map(field => (
+                    <DynamicField
+                      key={field.id}
+                      field={field}
+                      value={fieldValues[field.key] || ''}
+                      onChange={val => handleFieldChange(field.key, val)}
+                    />
+                  ))}
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Order Notes</Label>
-                  <Input placeholder="Special instructions..." value={notes} onChange={e => setNotes(e.target.value)} />
-                </div>
+
                 <Button
                   onClick={handlePlaceOrder}
-                  disabled={placing}
-                  className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-5 font-semibold shadow-lg"
+                  disabled={placing || (user ? needsProfileComplete : false)}
+                  className="w-full mt-5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-5 font-semibold shadow-lg"
                 >
                   {placing ? 'Placing Order...' : 'Place Order'}
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
+
                 {!user && (
-                  <p className="text-center text-xs text-gray-500">
-                    <Link href="/auth/signin" className="text-violet-600 font-medium">Sign in</Link> to place your order
+                  <p className="text-center text-xs text-gray-500 mt-3">
+                    <Link href="/auth/signin" className="text-violet-600 font-medium">Sign in</Link> to auto-fill your details
                   </p>
                 )}
               </div>
@@ -148,5 +228,63 @@ export default function CartPage() {
         </div>
       </section>
     </MainLayout>
+  )
+}
+
+// ── Dynamic Field Renderer ────────────────────────────────────────────────────
+
+function DynamicField({ field, value, onChange }: {
+  field: OrderFormField
+  value: string
+  onChange: (val: string) => void
+}) {
+  const hint = [
+    field.minLength && field.maxLength && field.minLength === field.maxLength
+      ? `${field.minLength} characters required`
+      : [field.minLength && `min ${field.minLength}`, field.maxLength && `max ${field.maxLength}`].filter(Boolean).join(', ') + (field.minLength || field.maxLength ? ' characters' : ''),
+  ].filter(Boolean).join(' · ')
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+        {field.label}
+        {field.required && <span className="text-red-500">*</span>}
+        {field.autoFillKey && value && (
+          <span className="text-xs text-violet-500 font-normal">(from profile)</span>
+        )}
+      </Label>
+
+      {field.type === 'textarea' ? (
+        <Textarea
+          placeholder={field.placeholder}
+          rows={3}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          maxLength={field.maxLength}
+        />
+      ) : field.type === 'select' ? (
+        <Select value={value} onValueChange={v => v && onChange(v)}>
+          <SelectTrigger><SelectValue placeholder={field.placeholder || 'Select...'} /></SelectTrigger>
+          <SelectContent>
+            {field.options?.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      ) : (
+        <Input
+          type={field.type}
+          placeholder={field.placeholder}
+          value={value}
+          onChange={e => {
+            let val = e.target.value
+            if (field.type === 'tel') val = val.replace(/\D/g, '')
+            onChange(val)
+          }}
+          maxLength={field.maxLength}
+          minLength={field.minLength}
+        />
+      )}
+
+      {hint && <p className="text-xs text-gray-400">{hint}</p>}
+    </div>
   )
 }

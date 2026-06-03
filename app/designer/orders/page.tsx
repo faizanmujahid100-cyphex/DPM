@@ -54,8 +54,8 @@ function OrderProgressCard({ order, onUpdate }: { order: Order; onUpdate: () => 
             </span>
           </div>
           <div className="text-sm text-gray-500">{order.items.length} item(s) · PKR {order.total.toLocaleString()}</div>
-          {order.shippingAddress && <div className="text-xs text-gray-400 mt-0.5">📍 {order.shippingAddress}</div>}
-          {order.notes && <div className="text-xs text-gray-500 mt-0.5 italic">Note: {order.notes}</div>}
+          {order.formData?.address && <div className="text-xs text-gray-400 mt-0.5">📍 {order.formData.address}</div>}
+          {order.formData?.notes && <div className="text-xs text-gray-500 mt-0.5 italic">Note: {order.formData.notes}</div>}
         </div>
       </div>
 

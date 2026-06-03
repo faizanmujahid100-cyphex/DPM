@@ -8,6 +8,10 @@ export interface User {
   name: string
   role: UserRole
   phone?: string
+  fatherName?: string
+  whatsapp?: string
+  address?: string
+  profileComplete?: boolean
   createdAt: Timestamp
 }
 
@@ -59,17 +63,34 @@ export interface Order {
   customerId: string
   customerName: string
   customerEmail: string
-  customerPhone?: string
   items: CartItem[]
   total: number
   status: OrderStatus
+  formData: Record<string, string>
   designerId?: string
   designerName?: string
   designerProgress?: number
   notes?: string
-  shippingAddress?: string
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+export type FieldType = 'text' | 'number' | 'email' | 'tel' | 'textarea' | 'select'
+
+export interface OrderFormField {
+  id: string
+  label: string
+  key: string
+  type: FieldType
+  placeholder: string
+  required: boolean
+  active: boolean
+  isSystem: boolean
+  minLength?: number
+  maxLength?: number
+  options?: string[]
+  autoFillKey?: string
+  order: number
 }
 
 export type ServiceRequestStatus = 'submitted' | 'reviewing' | 'in_progress' | 'completed' | 'cancelled'

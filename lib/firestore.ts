@@ -15,7 +15,45 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import { User, Category, Product, Service, Order, ServiceRequest, OrderStatus, ServiceRequestStatus } from '@/types'
+import { User, Category, Product, Service, Order, ServiceRequest, OrderFormField, OrderStatus, ServiceRequestStatus } from '@/types'
+
+// ── Order Form Fields ──────────────────────────────────────────────────────────
+
+const DEFAULT_FIELDS: Omit<OrderFormField, 'id'>[] = [
+  { label: 'Full Name', key: 'name', type: 'text', placeholder: 'Enter your full name', required: true, active: true, isSystem: true, minLength: 2, maxLength: 60, autoFillKey: 'name', order: 1 },
+  { label: "Father's Name", key: 'fatherName', type: 'text', placeholder: "Enter father's name", required: false, active: true, isSystem: true, minLength: 2, maxLength: 60, autoFillKey: 'fatherName', order: 2 },
+  { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '03xxxxxxxxx (11 digits)', required: true, active: true, isSystem: true, minLength: 11, maxLength: 11, autoFillKey: 'phone', order: 3 },
+  { label: 'WhatsApp Number', key: 'whatsapp', type: 'tel', placeholder: '03xxxxxxxxx (11 digits)', required: false, active: true, isSystem: true, minLength: 11, maxLength: 11, autoFillKey: 'whatsapp', order: 4 },
+  { label: 'Email Address', key: 'email', type: 'email', placeholder: 'your@email.com', required: true, active: true, isSystem: true, autoFillKey: 'email', order: 5 },
+  { label: 'Delivery Address', key: 'address', type: 'textarea', placeholder: 'Full delivery address with city', required: true, active: true, isSystem: true, minLength: 10, autoFillKey: 'address', order: 6 },
+  { label: 'Order Notes', key: 'notes', type: 'textarea', placeholder: 'Any special instructions...', required: false, active: true, isSystem: false, order: 7 },
+]
+
+export const getOrderFormFields = async (): Promise<OrderFormField[]> => {
+  const snap = await getDocs(query(collection(db, 'orderFormFields'), orderBy('order', 'asc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as OrderFormField))
+}
+
+export const seedDefaultOrderFormFields = async (): Promise<void> => {
+  const existing = await getOrderFormFields()
+  if (existing.length > 0) return
+  for (const field of DEFAULT_FIELDS) {
+    await addDoc(collection(db, 'orderFormFields'), field)
+  }
+}
+
+export const saveOrderFormField = async (data: Omit<OrderFormField, 'id'>): Promise<string> => {
+  const ref = await addDoc(collection(db, 'orderFormFields'), data)
+  return ref.id
+}
+
+export const updateOrderFormField = async (id: string, data: Partial<OrderFormField>): Promise<void> => {
+  await updateDoc(doc(db, 'orderFormFields', id), data)
+}
+
+export const deleteOrderFormField = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, 'orderFormFields', id))
+}
 
 // Categories
 export const getCategories = async (): Promise<Category[]> => {

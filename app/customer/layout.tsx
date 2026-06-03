@@ -15,14 +15,15 @@ const navItems = [
 ]
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, logout } = useAuth()
+  const { user, loading, logout, needsProfileComplete } = useAuth()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) router.replace('/auth/signin')
     if (!loading && user && (user.role === 'admin' || user.role === 'designer')) router.replace(`/${user.role}`)
-  }, [user, loading, router])
+    if (!loading && user && needsProfileComplete) router.replace('/auth/complete-profile')
+  }, [user, loading, router, needsProfileComplete])
 
   if (loading || !user) {
     return (

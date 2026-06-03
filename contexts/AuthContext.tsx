@@ -20,15 +20,16 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null
   user: User | null
   loading: boolean
+  needsProfileComplete: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, name: string, role?: UserRole) => Promise<void>
   signInWithGoogle: (role?: UserRole) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-// Ensure/create Firestore user doc after Google auth
 async function syncGoogleUser(fbUser: FirebaseUser, role: UserRole = 'customer') {
   const existing = await getUser(fbUser.uid)
   if (!existing) {
@@ -41,13 +42,25 @@ async function syncGoogleUser(fbUser: FirebaseUser, role: UserRole = 'customer')
   return getUser(fbUser.uid)
 }
 
+function isProfileIncomplete(u: User | null): boolean {
+  if (!u) return false
+  if (u.role === 'admin' || u.role === 'designer') return false
+  return !u.profileComplete && (!u.phone || !u.address)
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const refreshUser = async () => {
+    if (firebaseUser) {
+      const userData = await getUser(firebaseUser.uid)
+      setUser(userData)
+    }
+  }
+
   useEffect(() => {
-    // Handle redirect result when user comes back from Google redirect flow
     getRedirectResult(auth)
       .then(async (result) => {
         if (result?.user) {
@@ -90,30 +103,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     provider.setCustomParameters({ prompt: 'select_account' })
 
     try {
-      // Try popup first
       const cred = await signInWithPopup(auth, provider)
       const userData = await syncGoogleUser(cred.user, role)
       setUser(userData)
     } catch (error: any) {
       const code = error?.code ?? ''
-
-      // Popup was blocked — fall back to redirect
       if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user') {
         await signInWithRedirect(auth, provider)
-        return // page will reload; redirect result handled in useEffect
+        return
       }
-
-      // Surface friendly messages
-      if (code === 'auth/unauthorized-domain') {
-        throw new Error('This domain is not authorized. Add it in Firebase Console → Authentication → Settings → Authorized domains.')
-      }
-      if (code === 'auth/cancelled-popup-request') {
-        throw new Error('Sign-in cancelled. Please try again.')
-      }
-      if (code === 'auth/network-request-failed') {
-        throw new Error('Network error. Check your internet connection.')
-      }
-
+      if (code === 'auth/unauthorized-domain') throw new Error('This domain is not authorized in Firebase Console.')
+      if (code === 'auth/cancelled-popup-request') throw new Error('Sign-in cancelled. Please try again.')
+      if (code === 'auth/network-request-failed') throw new Error('Network error. Check your connection.')
       throw error
     }
   }
@@ -123,8 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  const needsProfileComplete = isProfileIncomplete(user)
+
   return (
-    <AuthContext.Provider value={{ firebaseUser, user, loading, signIn, signUp, signInWithGoogle, logout }}>
+    <AuthContext.Provider value={{ firebaseUser, user, loading, needsProfileComplete, signIn, signUp, signInWithGoogle, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )
