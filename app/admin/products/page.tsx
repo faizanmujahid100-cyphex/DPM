@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getProducts, addProduct, updateProduct, deleteProduct } from '@/lib/firestore'
-import { Product, ProductCategory } from '@/types'
+import { getProducts, addProduct, updateProduct, deleteProduct, getCategories } from '@/lib/firestore'
+import { Product, Category } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,15 +13,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import ImageUpload from '@/components/ui/ImageUpload'
 import CloudImg from '@/components/ui/CloudImg'
-import { Plus, Pencil, Trash2, Package } from 'lucide-react'
+import { Plus, Pencil, Trash2, Package, Tag } from 'lucide-react'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
-const categories: ProductCategory[] = ['photo-frame', 'mug', 'shirt', 'banner', 'business-card', 'sticker', 'custom']
-const defaultForm = { name: '', category: 'custom' as ProductCategory, price: '', description: '', imageUrl: '', inStock: true, featured: false }
+const defaultForm = { name: '', category: '', price: '', description: '', imageUrl: '', inStock: true, featured: false }
 
-function ProductForm({ form, setForm, onSubmit, onCancel, loading }: {
+function ProductForm({ form, setForm, categories, onSubmit, onCancel, loading }: {
   form: typeof defaultForm
   setForm: React.Dispatch<React.SetStateAction<typeof defaultForm>>
+  categories: Category[]
   onSubmit: (e: React.FormEvent) => Promise<void>
   onCancel: () => void
   loading: boolean
@@ -39,10 +40,21 @@ function ProductForm({ form, setForm, onSubmit, onCancel, loading }: {
         </div>
         <div className="space-y-1.5">
           <Label>Category *</Label>
-          <Select value={form.category} onValueChange={v => { if (typeof v === 'string') setForm(p => ({ ...p, category: v as ProductCategory })) }}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{categories.map(c => <SelectItem key={c} value={c} className="capitalize">{c.replace('-', ' ')}</SelectItem>)}</SelectContent>
-          </Select>
+          {categories.length === 0 ? (
+            <div className="flex items-center gap-2 p-2.5 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-700">
+              <Tag className="w-3.5 h-3.5 shrink-0" />
+              <span>No categories yet. <Link href="/admin/categories" className="underline font-medium">Add categories first →</Link></span>
+            </div>
+          ) : (
+            <Select value={form.category} onValueChange={v => { if (typeof v === 'string') setForm(p => ({ ...p, category: v })) }}>
+              <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+              <SelectContent>
+                {categories.map(c => (
+                  <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
       <div className="space-y-1.5">
@@ -58,7 +70,9 @@ function ProductForm({ form, setForm, onSubmit, onCancel, loading }: {
         <div className="flex items-center gap-2"><Switch checked={form.featured} onCheckedChange={v => setForm(p => ({ ...p, featured: v }))} /><Label>Featured</Label></div>
       </div>
       <div className="flex gap-2">
-        <Button type="submit" disabled={loading} className="flex-1 bg-violet-600 hover:bg-violet-700 text-white">{loading ? 'Saving...' : 'Save Product'}</Button>
+        <Button type="submit" disabled={loading || categories.length === 0} className="flex-1 bg-violet-600 hover:bg-violet-700 text-white">
+          {loading ? 'Saving...' : 'Save Product'}
+        </Button>
         <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
       </div>
     </form>
@@ -67,6 +81,7 @@ function ProductForm({ form, setForm, onSubmit, onCancel, loading }: {
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [addOpen, setAddOpen] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
@@ -75,10 +90,17 @@ export default function AdminProductsPage() {
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
-    try { setProducts(await getProducts()) } catch {}
+    try {
+      const [p, c] = await Promise.all([getProducts(), getCategories()])
+      setProducts(p)
+      setCategories(c)
+    } catch {}
     setLoading(false)
   }
   useEffect(() => { load() }, [])
+
+  const getCategoryName = (slug: string) => categories.find(c => c.slug === slug)?.name ?? slug
+  const getCategoryColor = (slug: string) => categories.find(c => c.slug === slug)?.color ?? 'from-violet-400 to-purple-500'
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true)
@@ -117,30 +139,34 @@ export default function AdminProductsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Products</h1>
           <p className="text-gray-500 text-sm">{products.length} product{products.length !== 1 ? 's' : ''} in catalogue</p>
         </div>
-        <Button onClick={() => { setAddForm(defaultForm); setAddOpen(true) }} className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
-          <Plus className="w-4 h-4" /> Add Product
-        </Button>
+        <div className="flex gap-2">
+          {categories.length === 0 && (
+            <Link href="/admin/categories">
+              <Button variant="outline" className="gap-2 border-yellow-300 text-yellow-700 hover:bg-yellow-50">
+                <Tag className="w-4 h-4" /> Add Categories First
+              </Button>
+            </Link>
+          )}
+          <Button onClick={() => { setAddForm(defaultForm); setAddOpen(true) }} className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
+            <Plus className="w-4 h-4" /> Add Product
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {products.map(product => (
           <div key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-all">
-            <div className="relative h-44 bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
-              <CloudImg
-                src={product.imageUrl}
-                alt={product.name}
-                className="w-full h-full object-cover"
-                fallback={<Package className="w-14 h-14 text-violet-300" />}
-              />
+            <div className={`relative h-44 bg-gradient-to-br ${getCategoryColor(product.category)} flex items-center justify-center`}>
+              <CloudImg src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" fallback={<Package className="w-14 h-14 text-white/50" />} />
               <div className="absolute top-2 right-2 flex gap-1 flex-wrap justify-end">
                 {product.featured && <Badge className="bg-orange-500 text-white border-0 text-xs shadow">Featured</Badge>}
                 <Badge className={`${product.inStock ? 'bg-green-500' : 'bg-red-500'} text-white border-0 text-xs shadow`}>
-                  {product.inStock ? 'In Stock' : 'Out of Stock'}
+                  {product.inStock ? 'In Stock' : 'Out'}
                 </Badge>
               </div>
             </div>
             <div className="p-4">
-              <div className="text-xs text-gray-400 capitalize mb-0.5">{product.category.replace('-', ' ')}</div>
+              <div className="text-xs text-violet-600 font-medium mb-0.5">{getCategoryName(product.category)}</div>
               <div className="font-bold text-gray-900 mb-1 truncate">{product.name}</div>
               <p className="text-gray-500 text-xs leading-relaxed mb-3 line-clamp-2">{product.description}</p>
               <div className="flex items-center justify-between">
@@ -157,23 +183,22 @@ export default function AdminProductsPage() {
           <div className="col-span-full bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
             <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-gray-600 font-semibold mb-1">No products yet</h3>
-            <p className="text-gray-400 text-sm mb-4">Add your first product to the catalogue.</p>
-            <Button onClick={() => { setAddForm(defaultForm); setAddOpen(true) }} className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
-              <Plus className="w-4 h-4" /> Add Product
-            </Button>
+            <p className="text-gray-400 text-sm mb-4">Add categories first, then add products.</p>
           </div>
         )}
       </div>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-lg"><DialogHeader><DialogTitle>Add New Product</DialogTitle></DialogHeader>
-          <ProductForm form={addForm} setForm={setAddForm} onSubmit={handleAdd} onCancel={() => setAddOpen(false)} loading={saving} />
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Add New Product</DialogTitle></DialogHeader>
+          <ProductForm form={addForm} setForm={setAddForm} categories={categories} onSubmit={handleAdd} onCancel={() => setAddOpen(false)} loading={saving} />
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!editProduct} onOpenChange={o => !o && setEditProduct(null)}>
-        <DialogContent className="max-w-lg"><DialogHeader><DialogTitle>Edit Product</DialogTitle></DialogHeader>
-          <ProductForm form={editForm} setForm={setEditForm} onSubmit={handleEdit} onCancel={() => setEditProduct(null)} loading={saving} />
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Edit Product</DialogTitle></DialogHeader>
+          <ProductForm form={editForm} setForm={setEditForm} categories={categories} onSubmit={handleEdit} onCancel={() => setEditProduct(null)} loading={saving} />
         </DialogContent>
       </Dialog>
     </div>

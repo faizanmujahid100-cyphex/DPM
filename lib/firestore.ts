@@ -15,7 +15,25 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import { User, Product, Service, Order, ServiceRequest, OrderStatus, ServiceRequestStatus } from '@/types'
+import { User, Category, Product, Service, Order, ServiceRequest, OrderStatus, ServiceRequestStatus } from '@/types'
+
+// Categories
+export const getCategories = async (): Promise<Category[]> => {
+  const snap = await getDocs(query(collection(db, 'categories'), orderBy('createdAt', 'asc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Category))
+}
+
+export const addCategory = async (data: Omit<Category, 'id' | 'createdAt'>) => {
+  return addDoc(collection(db, 'categories'), { ...data, createdAt: serverTimestamp() })
+}
+
+export const updateCategory = async (id: string, data: Partial<Omit<Category, 'id' | 'createdAt'>>) => {
+  await updateDoc(doc(db, 'categories', id), data)
+}
+
+export const deleteCategory = async (id: string) => {
+  await deleteDoc(doc(db, 'categories', id))
+}
 
 // Users
 export const createUser = async (uid: string, data: Omit<User, 'uid' | 'createdAt'>) => {

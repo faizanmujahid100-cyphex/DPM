@@ -11,12 +11,19 @@ export interface User {
   createdAt: Timestamp
 }
 
-export type ProductCategory = 'photo-frame' | 'mug' | 'shirt' | 'banner' | 'business-card' | 'sticker' | 'custom'
+export interface Category {
+  id: string
+  name: string
+  slug: string
+  imageUrl: string
+  color: string
+  createdAt: Timestamp
+}
 
 export interface Product {
   id: string
   name: string
-  category: ProductCategory
+  category: string
   price: number
   description: string
   imageUrl: string

@@ -1,7 +1,7 @@
 import MainLayout from '@/components/layout/MainLayout'
 import HeroSection from '@/components/home/HeroSection'
 import StatsSection from '@/components/home/StatsSection'
-import FeaturedProducts from '@/components/home/FeaturedProducts'
+import CategoriesSection from '@/components/home/CategoriesSection'
 import ServicesPreview from '@/components/home/ServicesPreview'
 import WhyChooseUs from '@/components/home/WhyChooseUs'
 import Testimonials from '@/components/home/Testimonials'
@@ -12,7 +12,7 @@ export default function HomePage() {
     <MainLayout>
       <HeroSection />
       <StatsSection />
-      <FeaturedProducts />
+      <CategoriesSection />
       <ServicesPreview />
       <WhyChooseUs />
       <Testimonials />
