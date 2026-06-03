@@ -1,8 +1,8 @@
 'use client'
 
+import { useRef, useEffect, useState } from 'react'
 import { CldUploadWidget } from 'next-cloudinary'
-import type { CloudinaryUploadWidgetResults } from 'next-cloudinary'
-import { Upload, X, ImageIcon } from 'lucide-react'
+import { Upload, X, ImageIcon, CheckCircle2 } from 'lucide-react'
 
 interface ImageUploadProps {
   value: string
@@ -17,11 +17,27 @@ export default function ImageUpload({
   label = 'Upload Image',
   folder = 'dpm',
 }: ImageUploadProps) {
+  // Ref ensures we always call the latest onChange even if the widget caches the handler
+  const onChangeRef = useRef(onChange)
+  useEffect(() => { onChangeRef.current = onChange }, [onChange])
 
-  const handleSuccess = (results: CloudinaryUploadWidgetResults) => {
-    const info = results?.info
-    if (info && typeof info === 'object' && 'secure_url' in info) {
-      onChange(String((info as { secure_url: string }).secure_url))
+  // Local copy so the preview shows immediately on success without waiting for parent re-render
+  const [localUrl, setLocalUrl] = useState(value)
+
+  // Sync local if parent value changes (e.g. edit form opens with existing image)
+  useEffect(() => { setLocalUrl(value) }, [value])
+
+  const displayUrl = localUrl || value
+
+  const handleSuccess = (results: any) => {
+    const url: string =
+      results?.info?.secure_url ??
+      results?.secure_url ??
+      ''
+
+    if (url) {
+      setLocalUrl(url)          // Show preview instantly
+      onChangeRef.current(url)  // Update parent form state
     }
   }
 
@@ -38,30 +54,31 @@ export default function ImageUpload({
       onSuccess={handleSuccess}
     >
       {({ open }) => (
-        <div>
-          {value ? (
+        <div className="space-y-2">
+          {displayUrl ? (
             /* ── Preview ── */
-            <div className="relative w-full h-48 rounded-xl overflow-hidden border border-gray-200 group bg-gray-50">
+            <div className="relative w-full h-48 rounded-xl overflow-hidden border-2 border-green-200 group bg-gray-50">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={value}
-                alt="Product"
-                className="w-full h-full object-cover"
-              />
+              <img src={displayUrl} alt="Product" className="w-full h-full object-cover" />
+              {/* Success badge */}
+              <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded-full shadow">
+                <CheckCircle2 className="w-3 h-3" />
+                Image uploaded
+              </div>
               {/* Hover overlay */}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                 <button
                   type="button"
                   onClick={() => open()}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-800 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors shadow"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-800 rounded-lg text-sm font-semibold hover:bg-gray-100 shadow"
                 >
                   <Upload className="w-4 h-4" />
                   Change
                 </button>
                 <button
                   type="button"
-                  onClick={() => onChange('')}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors shadow"
+                  onClick={() => { setLocalUrl(''); onChangeRef.current('') }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 shadow"
                 >
                   <X className="w-4 h-4" />
                   Remove
