@@ -9,11 +9,11 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
 } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import AvatarUpload from '@/components/ui/AvatarUpload'
 import { User, Mail, Phone, Save, Lock, LogOut, Eye, EyeOff, ShieldCheck, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -24,6 +24,7 @@ export default function CustomerProfilePage() {
   // Profile form
   const [name, setName] = useState(user?.name || '')
   const [phone, setPhone] = useState(user?.phone || '')
+  const [photoURL, setPhotoURL] = useState(user?.photoURL || '')
   const [saving, setSaving] = useState(false)
 
   // Password form
@@ -42,7 +43,7 @@ export default function CustomerProfilePage() {
     if (!user) return
     setSaving(true)
     try {
-      await updateUser(user.uid, { name, phone })
+      await updateUser(user.uid, { name, phone, photoURL: photoURL || undefined })
       toast.success('Profile updated successfully!')
     } catch {
       toast.error('Failed to update profile.')
@@ -102,15 +103,18 @@ export default function CustomerProfilePage() {
       {/* Profile Card */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shrink-0">
-            {user?.name?.charAt(0).toUpperCase()}
-          </div>
+          <AvatarUpload
+            value={photoURL}
+            onChange={setPhotoURL}
+            initials={user?.name?.charAt(0).toUpperCase()}
+          />
           <div>
             <div className="font-bold text-gray-900 text-lg">{user?.name}</div>
             <div className="text-gray-500 text-sm">{user?.email}</div>
             <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 font-medium capitalize">
               {user?.role}
             </span>
+            <p className="text-xs text-gray-400 mt-1">Hover photo to change</p>
           </div>
         </div>
 

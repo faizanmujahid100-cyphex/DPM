@@ -11,6 +11,7 @@ export interface User {
   fatherName?: string
   whatsapp?: string
   address?: string
+  photoURL?: string
   profileComplete?: boolean
   createdAt: Timestamp
 }
