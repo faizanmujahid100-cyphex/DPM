@@ -11,6 +11,7 @@ import {
   Package, Home, Info, Phone, Layers,
   LayoutDashboard, Settings, UserCircle, ChevronDown,
 } from 'lucide-react'
+import UserAvatar from '@/components/ui/UserAvatar'
 
 const navLinks = [
   { href: '/', label: 'Home', icon: Home },
@@ -116,9 +117,7 @@ export default function Header() {
                   onClick={() => setDropdownOpen(prev => !prev)}
                   className="flex items-center gap-1.5 pl-0.5 pr-2 py-0.5 rounded-full hover:bg-white/10 transition-colors group"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
-                    {user.name?.charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar name={user.name} photoURL={user.photoURL} className="w-8 h-8 bg-gradient-to-br from-orange-400 to-pink-500" />
                   <ChevronDown className={`w-3.5 h-3.5 text-violet-300 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -127,9 +126,7 @@ export default function Header() {
                     {/* User info */}
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                          {user.name?.charAt(0).toUpperCase()}
-                        </div>
+                        <UserAvatar name={user.name} photoURL={user.photoURL} className="w-9 h-9 bg-gradient-to-br from-orange-400 to-pink-500" />
                         <div className="min-w-0">
                           <div className="font-semibold text-gray-900 text-sm truncate">{user.name}</div>
                           <div className="text-xs text-gray-400 truncate">{user.email}</div>
@@ -202,9 +199,7 @@ export default function Header() {
               {user && (
                 <div className="mb-4 p-3 bg-white/10 rounded-xl space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                      {user.name?.charAt(0).toUpperCase()}
-                    </div>
+                    <UserAvatar name={user.name} photoURL={user.photoURL} className="w-9 h-9 bg-gradient-to-br from-orange-400 to-pink-500" />
                     <div className="min-w-0">
                       <div className="text-white font-semibold text-sm truncate">{user.name}</div>
                       <div className="text-violet-300 text-xs capitalize">{user.role}</div>
