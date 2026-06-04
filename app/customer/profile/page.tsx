@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateUser } from '@/lib/firestore'
 import {
@@ -18,7 +18,7 @@ import { User, Mail, Phone, Save, Lock, LogOut, Eye, EyeOff, ShieldCheck, AlertC
 import { toast } from 'sonner'
 
 export default function CustomerProfilePage() {
-  const { user, firebaseUser, logout } = useAuth()
+  const { user, firebaseUser, logout, refreshUser } = useAuth()
   const router = useRouter()
 
   // Profile form
@@ -26,6 +26,14 @@ export default function CustomerProfilePage() {
   const [phone, setPhone] = useState(user?.phone || '')
   const [photoURL, setPhotoURL] = useState(user?.photoURL || '')
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '')
+      setPhone(user.phone || '')
+      setPhotoURL(user.photoURL || '')
+    }
+  }, [user])
 
   // Password form
   const [currentPassword, setCurrentPassword] = useState('')
@@ -44,6 +52,7 @@ export default function CustomerProfilePage() {
     setSaving(true)
     try {
       await updateUser(user.uid, { name, phone, photoURL: photoURL || undefined })
+      await refreshUser()
       toast.success('Profile updated successfully!')
     } catch {
       toast.error('Failed to update profile.')

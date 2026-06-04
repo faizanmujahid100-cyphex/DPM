@@ -25,7 +25,7 @@ import Link from 'next/link'
 import MainLayout from '@/components/layout/MainLayout'
 
 export default function ProfilePage() {
-  const { user, firebaseUser, logout, loading } = useAuth()
+  const { user, firebaseUser, logout, loading, refreshUser } = useAuth()
   const router = useRouter()
 
   const [name, setName] = useState('')
@@ -70,6 +70,7 @@ export default function ProfilePage() {
     setSaving(true)
     try {
       await updateUser(user.uid, { name, fatherName: fatherName || undefined, phone, whatsapp: whatsapp || undefined, address: address || undefined, photoURL: photoURL || undefined, profileComplete: !!(phone && address) })
+      await refreshUser()
       toast.success('Profile updated successfully!')
     } catch {
       toast.error('Failed to update profile.')
