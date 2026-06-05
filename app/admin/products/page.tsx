@@ -214,23 +214,23 @@ function ProductForm({ form, setForm, categories, onSubmit, onCancel, loading }:
         )}
       </div>
 
-      {/* ── Package Options ── */}
+      {/* ── Add-ons ── */}
       <div className="p-4 bg-orange-50/60 rounded-2xl border border-orange-100">
         <div className="flex items-center justify-between mb-1">
-          <SectionHeader icon={Box} title="Package Options" color="text-orange-600" />
+          <SectionHeader icon={Box} title="Add-ons (Optional Extras)" color="text-orange-600" />
           <Button type="button" size="sm" variant="outline"
             className="border-orange-300 text-orange-700 hover:bg-orange-100 gap-1.5 h-8 text-xs"
             onClick={addPkg}>
-            <Plus className="w-3.5 h-3.5" /> Add Package
+            <Plus className="w-3.5 h-3.5" /> Add Option
           </Button>
         </div>
         <p className="text-xs text-gray-400 mb-3">
-          Add-on price is added on top of base price. Enter <strong>0</strong> for same as base.
+          Customers can pick any combination of these (or none). Add-on price stacks on top of base price. Enter <strong>0</strong> for no extra charge.
         </p>
         {form.packageVariants.length === 0 ? (
           <div className="text-center py-5 border-2 border-dashed border-orange-200 rounded-xl">
             <Box className="w-8 h-8 text-orange-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">No packages yet. E.g. "Cup + Spoon", "Pen + Cover".</p>
+            <p className="text-sm text-gray-400">No add-ons yet. E.g. "Cloth Cover", "Plastic Cover", "Gift Box".</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -444,7 +444,7 @@ export default function AdminProductsPage() {
                     )}
                     {packageVariants.length > 0 && (
                       <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">
-                        <Box className="w-3 h-3" /> {packageVariants.length} pkg{packageVariants.length > 1 ? 's' : ''}
+                        <Box className="w-3 h-3" /> {packageVariants.length} add-on{packageVariants.length > 1 ? 's' : ''}
                       </span>
                     )}
                   </div>

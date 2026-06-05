@@ -21,8 +21,8 @@ export default function ProductDetailPage() {
   const [product,    setProduct]    = useState<Product | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading,    setLoading]    = useState(true)
-  const [selectedColor,   setSelectedColor]   = useState<ProductVariant | null>(null)
-  const [selectedPackage, setSelectedPackage] = useState<ProductVariant | null>(null)
+  const [selectedColor,  setSelectedColor]  = useState<ProductVariant | null>(null)
+  const [selectedAddons, setSelectedAddons] = useState<ProductVariant[]>([])   // multi-select, none by default
   const [quantity, setQuantity] = useState(1)
 
   useEffect(() => {
@@ -30,29 +30,38 @@ export default function ProductDetailPage() {
       .then(([p, c]) => {
         setProduct(p)
         setCategories(c)
+        // Auto-select first color only — add-ons are always customer's choice
         if (p?.variants) {
           const firstColor = p.variants.find(v => v.type === 'color')
-          const firstPkg   = p.variants.find(v => v.type === 'package')
           if (firstColor) setSelectedColor(firstColor)
-          if (firstPkg)   setSelectedPackage(firstPkg)
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [id])
 
-  const colorVariants   = product?.variants?.filter(v => v.type === 'color')   ?? []
-  const packageVariants = product?.variants?.filter(v => v.type === 'package') ?? []
+  const colorVariants = product?.variants?.filter(v => v.type === 'color')   ?? []
+  const addonVariants = product?.variants?.filter(v => v.type === 'package') ?? []
 
-  const base         = product?.price ?? 0
-  const colorAddon   = selectedColor?.price   ?? 0
-  const pkgAddon     = selectedPackage?.price  ?? 0
-  const unitPrice    = base + colorAddon + pkgAddon
-  const totalPrice   = unitPrice * quantity
+  const toggleAddon = (v: ProductVariant) =>
+    setSelectedAddons(prev =>
+      prev.some(a => a.label === v.label)
+        ? prev.filter(a => a.label !== v.label)
+        : [...prev, v]
+    )
 
-  const hasAddons    = colorAddon > 0 || pkgAddon > 0
+  const base        = product?.price ?? 0
+  const colorAddon  = selectedColor?.price ?? 0
+  const addonsTotal = selectedAddons.reduce((sum, a) => sum + a.price, 0)
+  const unitPrice   = base + colorAddon + addonsTotal
+  const totalPrice  = unitPrice * quantity
 
-  const variantSummary = [selectedColor?.label, selectedPackage?.label].filter(Boolean).join(' + ')
+  const hasExtras   = colorAddon > 0 || addonsTotal > 0
+
+  const variantSummary = [
+    selectedColor?.label,
+    selectedAddons.length > 0 ? selectedAddons.map(a => a.label).join(', ') : null,
+  ].filter(Boolean).join(' + ')
 
   const getCategoryName  = (s: string) => categories.find(c => c.slug === s)?.name ?? s.replace(/-/g, ' ')
   const getCategoryColor = (s: string) => categories.find(c => c.slug === s)?.color ?? 'from-violet-400 to-purple-500'
@@ -173,7 +182,7 @@ export default function ProductDetailPage() {
                   PKR <span className="text-violet-600">{unitPrice.toLocaleString()}</span>
                 </p>
 
-                {hasAddons && (
+                {hasExtras && (
                   <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-sm text-gray-500">
                     <span>Base PKR {base.toLocaleString()}</span>
                     {colorAddon > 0 && (
@@ -181,15 +190,15 @@ export default function ProductDetailPage() {
                         + {selectedColor?.label} +PKR {colorAddon.toLocaleString()}
                       </span>
                     )}
-                    {pkgAddon > 0 && (
-                      <span className="text-orange-500 font-medium">
-                        + {selectedPackage?.label} +PKR {pkgAddon.toLocaleString()}
+                    {selectedAddons.map(a => a.price > 0 && (
+                      <span key={a.label} className="text-orange-500 font-medium">
+                        + {a.label} +PKR {a.price.toLocaleString()}
                       </span>
-                    )}
+                    ))}
                   </div>
                 )}
 
-                {!hasAddons && (colorVariants.length > 0 || packageVariants.length > 0) && (
+                {!hasExtras && (colorVariants.length > 0 || addonVariants.length > 0) && (
                   <p className="text-sm text-gray-400 mt-1">Select options below — price may vary</p>
                 )}
               </div>
@@ -240,39 +249,40 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* ── package selector ── */}
-              {packageVariants.length > 0 && (
+              {/* ── add-ons (multi-select, optional) ── */}
+              {addonVariants.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-sm font-bold text-gray-800">Package:</span>
-                    {selectedPackage && (
-                      <span className="text-sm text-gray-700">{selectedPackage.label}</span>
-                    )}
-                    {pkgAddon > 0 && (
-                      <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full ml-1">
-                        +PKR {pkgAddon.toLocaleString()}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-bold text-gray-800">Add-ons</span>
+                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Optional</span>
+                    {addonsTotal > 0 && (
+                      <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full ml-auto">
+                        +PKR {addonsTotal.toLocaleString()}
                       </span>
                     )}
                   </div>
+                  <p className="text-xs text-gray-400 mb-3">Select any extras you'd like — you can pick multiple.</p>
                   <div className="flex flex-wrap gap-2">
-                    {packageVariants.map(v => (
-                      <button
-                        key={v.label}
-                        onClick={() => setSelectedPackage(v)}
-                        className={`px-4 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all duration-150 ${
-                          selectedPackage?.label === v.label
-                            ? 'border-violet-600 bg-violet-600 text-white shadow-sm'
-                            : 'border-gray-200 text-gray-700 bg-white hover:border-violet-400 hover:text-violet-700'
-                        }`}
-                      >
-                        {v.label}
-                        {v.price > 0 && (
-                          <span className={`block text-xs font-normal mt-0.5 ${selectedPackage?.label === v.label ? 'text-violet-200' : 'text-gray-400'}`}>
-                            +PKR {v.price.toLocaleString()}
+                    {addonVariants.map(v => {
+                      const active = selectedAddons.some(a => a.label === v.label)
+                      return (
+                        <button
+                          key={v.label}
+                          onClick={() => toggleAddon(v)}
+                          className={`relative px-4 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all duration-150 ${
+                            active
+                              ? 'border-orange-500 bg-orange-500 text-white shadow-sm'
+                              : 'border-gray-200 text-gray-700 bg-white hover:border-orange-400 hover:text-orange-600'
+                          }`}
+                        >
+                          {active && <Check className="inline w-3.5 h-3.5 mr-1.5" strokeWidth={3} />}
+                          {v.label}
+                          <span className={`block text-xs font-normal mt-0.5 ${active ? 'text-orange-100' : 'text-gray-400'}`}>
+                            {v.price > 0 ? `+PKR ${v.price.toLocaleString()}` : 'No extra charge'}
                           </span>
-                        )}
-                      </button>
-                    ))}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               )}
