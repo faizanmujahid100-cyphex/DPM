@@ -548,10 +548,7 @@ export default function AdminProductsPage() {
 
       {/* Add dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-2xl"
-          onInteractOutside={e => e.preventDefault()}
-          onEscapeKeyDown={e => e.preventDefault()}>
-
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
@@ -567,10 +564,7 @@ export default function AdminProductsPage() {
 
       {/* Edit dialog */}
       <Dialog open={!!editProduct} onOpenChange={o => !o && setEditProduct(null)}>
-        <DialogContent className="max-w-2xl"
-          onInteractOutside={e => e.preventDefault()}
-          onEscapeKeyDown={e => e.preventDefault()}>
-
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
