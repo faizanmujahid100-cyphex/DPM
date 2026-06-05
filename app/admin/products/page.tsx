@@ -129,7 +129,7 @@ function ProductForm({ form, setForm, categories, onSubmit, onCancel, loading }:
                 <span>No categories. <Link href="/admin/categories" className="underline font-medium">Add categories first →</Link></span>
               </div>
             ) : (
-              <Select value={form.category} onValueChange={v => setField('category', v)}>
+              <Select value={form.category} onValueChange={v => setField('category', v ?? '')}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
                   {categories.map(c => <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>)}
