@@ -158,7 +158,7 @@ function ProductForm({ form, setForm, categories, onSubmit, onCancel, loading }:
 
       {/* ── Color Variants ── */}
       <div className="p-4 bg-violet-50/60 rounded-2xl border border-violet-100">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-1">
           <SectionHeader icon={Palette} title="Color Variants" color="text-violet-600" />
           <Button type="button" size="sm" variant="outline"
             className="border-violet-300 text-violet-700 hover:bg-violet-100 gap-1.5 h-8 text-xs"
@@ -166,6 +166,9 @@ function ProductForm({ form, setForm, categories, onSubmit, onCancel, loading }:
             <Plus className="w-3.5 h-3.5" /> Add Color
           </Button>
         </div>
+        <p className="text-xs text-gray-400 mb-3">
+          Add-on price is added on top of base price. Enter <strong>0</strong> for same as base.
+        </p>
         {form.colorVariants.length === 0 ? (
           <div className="text-center py-5 border-2 border-dashed border-violet-200 rounded-xl">
             <Palette className="w-8 h-8 text-violet-300 mx-auto mb-2" />
@@ -173,38 +176,47 @@ function ProductForm({ form, setForm, categories, onSubmit, onCancel, loading }:
           </div>
         ) : (
           <div className="space-y-2">
-            {form.colorVariants.map((v, i) => (
-              <div key={i} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-violet-100 shadow-sm">
-                <div className="relative shrink-0">
-                  <input type="color" value={v.color}
-                    onChange={e => updateColor(i, 'color', e.target.value)}
-                    className="w-10 h-10 rounded-xl cursor-pointer border-2 border-gray-200 p-1"
-                    style={{ background: 'none' }}
-                  />
-                  <div className="absolute inset-1 rounded-lg pointer-events-none"
-                    style={{ backgroundColor: v.color }} />
+            {form.colorVariants.map((v, i) => {
+              const finalPrice = (Number(form.price) || 0) + (Number(v.price) || 0)
+              return (
+                <div key={i} className="flex items-center gap-2 bg-white p-3 rounded-xl border border-violet-100 shadow-sm">
+                  <div className="relative shrink-0">
+                    <input type="color" value={v.color}
+                      onChange={e => updateColor(i, 'color', e.target.value)}
+                      className="w-10 h-10 rounded-xl cursor-pointer border-2 border-gray-200 p-1"
+                      style={{ background: 'none' }}
+                    />
+                    <div className="absolute inset-1 rounded-lg pointer-events-none"
+                      style={{ backgroundColor: v.color }} />
+                  </div>
+                  <Input placeholder="Color name (e.g. Black)" value={v.label}
+                    onChange={e => updateColor(i, 'label', e.target.value)} className="flex-1 text-sm min-w-0" />
+                  <div className="relative w-28 shrink-0">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-violet-400 font-semibold">+PKR</span>
+                    <Input type="number" min="0" placeholder="0" value={v.price}
+                      onChange={e => updateColor(i, 'price', e.target.value)} className="pl-11 text-sm" />
+                  </div>
+                  {form.price && (
+                    <div className="shrink-0 text-right">
+                      <div className="text-[10px] text-gray-400">Total</div>
+                      <div className="text-sm font-bold text-violet-700">= {finalPrice.toLocaleString()}</div>
+                    </div>
+                  )}
+                  <Button type="button" variant="ghost" size="icon"
+                    className="shrink-0 text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8"
+                    onClick={() => removeColor(i)}>
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
-                <Input placeholder="Color name  (e.g. Black)" value={v.label}
-                  onChange={e => updateColor(i, 'label', e.target.value)} className="flex-1 text-sm" />
-                <div className="relative w-32 shrink-0">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">PKR</span>
-                  <Input type="number" min="0" placeholder="200" value={v.price}
-                    onChange={e => updateColor(i, 'price', e.target.value)} className="pl-11 text-sm" />
-                </div>
-                <Button type="button" variant="ghost" size="icon"
-                  className="shrink-0 text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8"
-                  onClick={() => removeColor(i)}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
 
       {/* ── Package Options ── */}
       <div className="p-4 bg-orange-50/60 rounded-2xl border border-orange-100">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-1">
           <SectionHeader icon={Box} title="Package Options" color="text-orange-600" />
           <Button type="button" size="sm" variant="outline"
             className="border-orange-300 text-orange-700 hover:bg-orange-100 gap-1.5 h-8 text-xs"
@@ -212,29 +224,41 @@ function ProductForm({ form, setForm, categories, onSubmit, onCancel, loading }:
             <Plus className="w-3.5 h-3.5" /> Add Package
           </Button>
         </div>
+        <p className="text-xs text-gray-400 mb-3">
+          Add-on price is added on top of base price. Enter <strong>0</strong> for same as base.
+        </p>
         {form.packageVariants.length === 0 ? (
           <div className="text-center py-5 border-2 border-dashed border-orange-200 rounded-xl">
             <Box className="w-8 h-8 text-orange-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">No packages. E.g. "Cup + Spoon", "Pen + Cover".</p>
+            <p className="text-sm text-gray-400">No packages yet. E.g. "Cup + Spoon", "Pen + Cover".</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {form.packageVariants.map((v, i) => (
-              <div key={i} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-orange-100 shadow-sm">
-                <Input placeholder="Package label (e.g. Cup + Spoon)" value={v.label}
-                  onChange={e => updatePkg(i, 'label', e.target.value)} className="flex-1 text-sm" />
-                <div className="relative w-36 shrink-0">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">PKR</span>
-                  <Input type="number" min="0" placeholder="300" value={v.price}
-                    onChange={e => updatePkg(i, 'price', e.target.value)} className="pl-11 text-sm" />
+            {form.packageVariants.map((v, i) => {
+              const finalPrice = (Number(form.price) || 0) + (Number(v.price) || 0)
+              return (
+                <div key={i} className="flex items-center gap-2 bg-white p-3 rounded-xl border border-orange-100 shadow-sm">
+                  <Input placeholder="Package label (e.g. Cup + Spoon)" value={v.label}
+                    onChange={e => updatePkg(i, 'label', e.target.value)} className="flex-1 text-sm min-w-0" />
+                  <div className="relative w-28 shrink-0">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-orange-400 font-semibold">+PKR</span>
+                    <Input type="number" min="0" placeholder="0" value={v.price}
+                      onChange={e => updatePkg(i, 'price', e.target.value)} className="pl-11 text-sm" />
+                  </div>
+                  {form.price && (
+                    <div className="shrink-0 text-right">
+                      <div className="text-[10px] text-gray-400">Total</div>
+                      <div className="text-sm font-bold text-orange-600">= {finalPrice.toLocaleString()}</div>
+                    </div>
+                  )}
+                  <Button type="button" variant="ghost" size="icon"
+                    className="shrink-0 text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8"
+                    onClick={() => removePkg(i)}>
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
-                <Button type="button" variant="ghost" size="icon"
-                  className="shrink-0 text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8"
-                  onClick={() => removePkg(i)}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
