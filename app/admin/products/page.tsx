@@ -69,6 +69,13 @@ function SectionHeader({ icon: Icon, title, color = 'text-violet-600' }: {
   )
 }
 
+// ── Preset color palette ──────────────────────────────────────────────────────
+const COLORS = [
+  '#000000','#ffffff','#ef4444','#f97316','#eab308',
+  '#22c55e','#14b8a6','#3b82f6','#8b5cf6','#ec4899',
+  '#6b7280','#d1d5db','#1e3a8a','#92400e','#4d7c0f','#7f1d1d',
+]
+
 // ── ProductForm ────────────────────────────────────────────────────────────────
 
 function ProductForm({ form, setForm, categories, onSave, onCancel, loading }: {
@@ -180,38 +187,59 @@ function ProductForm({ form, setForm, categories, onSave, onCancel, loading }: {
             <p className="text-sm text-gray-400">No color variants. Customers will see the base price.</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {form.colorVariants.map((v, i) => {
               const finalPrice = (Number(form.price) || 0) + (Number(v.price) || 0)
               return (
-                <div key={i} className="flex items-center gap-2 bg-white p-3 rounded-xl border border-violet-100 shadow-sm">
-                  <div className="relative shrink-0">
-                    <input type="color" value={v.color}
-                      onChange={e => updateColor(i, 'color', e.target.value)}
-                      className="w-10 h-10 rounded-xl cursor-pointer border-2 border-gray-200 p-1"
-                      style={{ background: 'none' }}
-                    />
-                    <div className="absolute inset-1 rounded-lg pointer-events-none"
+                <div key={i} className="bg-white p-3 rounded-xl border border-violet-100 shadow-sm space-y-2.5">
+                  {/* Row: preview + name + price + total + delete */}
+                  <div className="flex items-center gap-2">
+                    {/* Color preview — no OS picker, just a visual dot */}
+                    <div className="w-8 h-8 rounded-full shrink-0 border-2 border-gray-200"
                       style={{ backgroundColor: v.color }} />
-                  </div>
-                  <Input placeholder="Color name (e.g. Black)" value={v.label}
-                    onChange={e => updateColor(i, 'label', e.target.value)} className="flex-1 text-sm min-w-0" />
-                  <div className="relative w-28 shrink-0">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-violet-400 font-semibold">+PKR</span>
-                    <Input type="number" min="0" placeholder="0" value={v.price}
-                      onChange={e => updateColor(i, 'price', e.target.value)} className="pl-11 text-sm" />
-                  </div>
-                  {form.price && (
-                    <div className="shrink-0 text-right">
-                      <div className="text-[10px] text-gray-400">Total</div>
-                      <div className="text-sm font-bold text-violet-700">= {finalPrice.toLocaleString()}</div>
+                    <Input placeholder="Color name (e.g. Black)" value={v.label}
+                      onChange={e => updateColor(i, 'label', e.target.value)} className="flex-1 text-sm min-w-0" />
+                    <div className="relative w-28 shrink-0">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-violet-400 font-semibold">+PKR</span>
+                      <Input type="number" min="0" placeholder="0" value={v.price}
+                        onChange={e => updateColor(i, 'price', e.target.value)} className="pl-11 text-sm" />
                     </div>
-                  )}
-                  <Button type="button" variant="ghost" size="icon"
-                    className="shrink-0 text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8"
-                    onClick={() => removeColor(i)}>
-                    <X className="w-4 h-4" />
-                  </Button>
+                    {form.price && (
+                      <div className="shrink-0 text-right">
+                        <div className="text-[10px] text-gray-400">Total</div>
+                        <div className="text-sm font-bold text-violet-700">= {finalPrice.toLocaleString()}</div>
+                      </div>
+                    )}
+                    <Button type="button" variant="ghost" size="icon"
+                      className="shrink-0 text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8"
+                      onClick={() => removeColor(i)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {/* Preset swatches — click to pick, no OS dialog */}
+                  <div className="flex flex-wrap gap-1.5 pl-10">
+                    {COLORS.map(hex => (
+                      <button
+                        key={hex}
+                        type="button"
+                        title={hex}
+                        onClick={() => updateColor(i, 'color', hex)}
+                        className={`w-5 h-5 rounded-full border transition-all hover:scale-110 ${
+                          v.color === hex ? 'ring-2 ring-violet-500 ring-offset-1 scale-110' : 'border-gray-200'
+                        }`}
+                        style={{ backgroundColor: hex }}
+                      />
+                    ))}
+                    {/* Custom hex text input */}
+                    <input
+                      type="text"
+                      value={v.color}
+                      onChange={e => updateColor(i, 'color', e.target.value)}
+                      placeholder="#000000"
+                      maxLength={7}
+                      className="w-20 text-xs font-mono border border-gray-200 rounded-md px-2 py-0.5 text-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    />
+                  </div>
                 </div>
               )
             })}
@@ -349,7 +377,7 @@ export default function AdminProductsPage() {
       const colorCount = variants.filter(v => v.type === 'color').length
       const addonCount = variants.filter(v => v.type === 'package').length
       toast.success(`Product added!${colorCount ? ` ${colorCount} color(s)` : ''}${addonCount ? `, ${addonCount} add-on(s)` : ''} saved.`)
-      setAddOpen(false); setAddForm(defaultForm); load()
+      setAddOpen(false); setAddForm(defaultForm); await load()
     } catch (err) {
       console.error('[addProduct]', err)
       toast.error(`Failed to add product: ${(err as Error)?.message ?? 'unknown error'}`)
@@ -370,7 +398,7 @@ export default function AdminProductsPage() {
       const colorCount = variants.filter(v => v.type === 'color').length
       const addonCount = variants.filter(v => v.type === 'package').length
       toast.success(`Product updated!${colorCount ? ` ${colorCount} color(s)` : ''}${addonCount ? `, ${addonCount} add-on(s)` : ''} saved.`)
-      setEditProduct(null); load()
+      setEditProduct(null); await load()
     } catch (err) {
       console.error('[updateProduct]', err)
       toast.error(`Failed to update: ${(err as Error)?.message ?? 'unknown error'}`)
