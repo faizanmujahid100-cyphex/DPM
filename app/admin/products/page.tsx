@@ -71,35 +71,40 @@ function SectionHeader({ icon: Icon, title, color = 'text-violet-600' }: {
 
 // ── ProductForm ────────────────────────────────────────────────────────────────
 
-function ProductForm({ form, setForm, categories, onSubmit, onCancel, loading }: {
+function ProductForm({ form, setForm, categories, onSave, onCancel, loading }: {
   form: FormState
   setForm: React.Dispatch<React.SetStateAction<FormState>>
   categories: Category[]
-  onSubmit: (e: React.FormEvent) => Promise<void>
+  onSave: (form: FormState) => Promise<void>   // receives live form — no stale closure
   onCancel: () => void
   loading: boolean
 }) {
   const setField = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm(p => ({ ...p, [k]: v }))
 
-  // Color variants helpers
+  // Color variant helpers — use functional updater so we never read stale form.colorVariants
   const addColor = () =>
-    setField('colorVariants', [...form.colorVariants, { label: '', price: '', color: '#6d28d9' }])
+    setForm(p => ({ ...p, colorVariants: [...p.colorVariants, { label: '', price: '', color: '#6d28d9' }] }))
   const removeColor = (i: number) =>
-    setField('colorVariants', form.colorVariants.filter((_, idx) => idx !== i))
+    setForm(p => ({ ...p, colorVariants: p.colorVariants.filter((_, idx) => idx !== i) }))
   const updateColor = (i: number, k: keyof ColorRow, v: string) =>
-    setField('colorVariants', form.colorVariants.map((row, idx) => idx === i ? { ...row, [k]: v } : row))
+    setForm(p => ({ ...p, colorVariants: p.colorVariants.map((row, idx) => idx === i ? { ...row, [k]: v } : row) }))
 
-  // Package variants helpers
+  // Add-on helpers — same functional updater approach
   const addPkg = () =>
-    setField('packageVariants', [...form.packageVariants, { label: '', price: '' }])
+    setForm(p => ({ ...p, packageVariants: [...p.packageVariants, { label: '', price: '' }] }))
   const removePkg = (i: number) =>
-    setField('packageVariants', form.packageVariants.filter((_, idx) => idx !== i))
+    setForm(p => ({ ...p, packageVariants: p.packageVariants.filter((_, idx) => idx !== i) }))
   const updatePkg = (i: number, k: keyof PkgRow, v: string) =>
-    setField('packageVariants', form.packageVariants.map((row, idx) => idx === i ? { ...row, [k]: v } : row))
+    setForm(p => ({ ...p, packageVariants: p.packageVariants.map((row, idx) => idx === i ? { ...row, [k]: v } : row) }))
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSave(form)   // pass the live form directly — avoids parent stale-closure entirely
+  }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6 overflow-y-auto max-h-[76vh] pr-1">
+    <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto max-h-[76vh] pr-1">
 
       {/* ── Image ── */}
       <div className="p-4 bg-gray-50 rounded-2xl">
@@ -331,31 +336,45 @@ export default function AdminProductsPage() {
       .map(v => ({ label: v.label.trim(), price: Number(v.price) || 0, type: 'package' as const })),
   ]
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true)
+  const handleAdd = async (form: FormState) => {
+    setSaving(true)
+    const variants = buildVariants(form)
     try {
       await addProduct({
-        name: addForm.name, category: addForm.category, price: Number(addForm.price),
-        description: addForm.description, imageUrl: addForm.imageUrl,
-        inStock: addForm.inStock, featured: addForm.featured,
-        variants: buildVariants(addForm),
+        name: form.name, category: form.category, price: Number(form.price),
+        description: form.description, imageUrl: form.imageUrl,
+        inStock: form.inStock, featured: form.featured,
+        variants,
       })
-      toast.success('Product added!'); setAddOpen(false); setAddForm(defaultForm); load()
-    } catch { toast.error('Failed to add product.') }
+      const colorCount = variants.filter(v => v.type === 'color').length
+      const addonCount = variants.filter(v => v.type === 'package').length
+      toast.success(`Product added!${colorCount ? ` ${colorCount} color(s)` : ''}${addonCount ? `, ${addonCount} add-on(s)` : ''} saved.`)
+      setAddOpen(false); setAddForm(defaultForm); load()
+    } catch (err) {
+      console.error('[addProduct]', err)
+      toast.error(`Failed to add product: ${(err as Error)?.message ?? 'unknown error'}`)
+    }
     setSaving(false)
   }
 
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!editProduct) return; setSaving(true)
+  const handleEdit = async (form: FormState) => {
+    if (!editProduct) return; setSaving(true)
+    const variants = buildVariants(form)
     try {
       await updateProduct(editProduct.id, {
-        name: editForm.name, category: editForm.category, price: Number(editForm.price),
-        description: editForm.description, imageUrl: editForm.imageUrl,
-        inStock: editForm.inStock, featured: editForm.featured,
-        variants: buildVariants(editForm),
+        name: form.name, category: form.category, price: Number(form.price),
+        description: form.description, imageUrl: form.imageUrl,
+        inStock: form.inStock, featured: form.featured,
+        variants,
       })
-      toast.success('Product updated!'); setEditProduct(null); load()
-    } catch { toast.error('Failed to update.') }
+      const colorCount = variants.filter(v => v.type === 'color').length
+      const addonCount = variants.filter(v => v.type === 'package').length
+      toast.success(`Product updated!${colorCount ? ` ${colorCount} color(s)` : ''}${addonCount ? `, ${addonCount} add-on(s)` : ''} saved.`)
+      setEditProduct(null); load()
+    } catch (err) {
+      console.error('[updateProduct]', err)
+      toast.error(`Failed to update: ${(err as Error)?.message ?? 'unknown error'}`)
+    }
     setSaving(false)
   }
 
@@ -494,7 +513,7 @@ export default function AdminProductsPage() {
             </DialogTitle>
           </DialogHeader>
           <ProductForm form={addForm} setForm={setAddForm} categories={categories}
-            onSubmit={handleAdd} onCancel={() => setAddOpen(false)} loading={saving} />
+            onSave={handleAdd} onCancel={() => setAddOpen(false)} loading={saving} />
         </DialogContent>
       </Dialog>
 
@@ -510,7 +529,7 @@ export default function AdminProductsPage() {
             </DialogTitle>
           </DialogHeader>
           <ProductForm form={editForm} setForm={setEditForm} categories={categories}
-            onSubmit={handleEdit} onCancel={() => setEditProduct(null)} loading={saving} />
+            onSave={handleEdit} onCancel={() => setEditProduct(null)} loading={saving} />
         </DialogContent>
       </Dialog>
     </div>
