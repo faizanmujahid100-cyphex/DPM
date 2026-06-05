@@ -32,8 +32,10 @@ export interface Product {
   price: number
   description: string
   imageUrl: string
+  images?: string[]
   inStock: boolean
   featured: boolean
+  variants?: ProductVariant[]
   createdAt: Timestamp
 }
 
@@ -48,6 +50,13 @@ export interface Service {
   createdAt: Timestamp
 }
 
+export interface ProductVariant {
+  label: string
+  price: number
+  color?: string   // hex string, e.g. "#ff0000" — only for type 'color'
+  type: 'color' | 'package'
+}
+
 export interface CartItem {
   productId: string
   productName: string
@@ -55,6 +64,7 @@ export interface CartItem {
   quantity: number
   imageUrl: string
   category: string
+  variantLabel?: string
 }
 
 export type OrderStatus = 'pending' | 'awaiting_bid' | 'in_progress' | 'quality_check' | 'completed' | 'cancelled'

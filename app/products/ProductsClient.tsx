@@ -8,8 +8,9 @@ import CloudImg from '@/components/ui/CloudImg'
 import { useCart } from '@/contexts/CartContext'
 import { getProducts, getCategories } from '@/lib/firestore'
 import { Product, Category } from '@/types'
-import { ShoppingCart, Package } from 'lucide-react'
+import { ShoppingCart, Package, Eye } from 'lucide-react'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
 export default function ProductsClient() {
   const { addItem } = useCart()
@@ -120,12 +121,21 @@ export default function ProductsClient() {
                         <p className="text-gray-500 text-sm leading-relaxed mb-4 flex-1 line-clamp-2">{product.description}</p>
                         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                           <div>
-                            <div className="text-xs text-gray-400">Starting from</div>
+                            <div className="text-xs text-gray-400">
+                              {product.variants?.length ? 'From' : 'Price'}
+                            </div>
                             <div className="text-violet-700 font-bold text-lg">PKR {product.price.toLocaleString()}</div>
                           </div>
-                          <Button size="sm" onClick={() => handleAddToCart(product)} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
-                            <ShoppingCart className="w-3.5 h-3.5" /> Add
-                          </Button>
+                          <div className="flex gap-1.5">
+                            <Link href={`/products/${product.id}`}>
+                              <Button size="sm" variant="outline" className="gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50">
+                                <Eye className="w-3.5 h-3.5" /> View
+                              </Button>
+                            </Link>
+                            <Button size="sm" onClick={() => handleAddToCart(product)} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
+                              <ShoppingCart className="w-3.5 h-3.5" /> Add
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>

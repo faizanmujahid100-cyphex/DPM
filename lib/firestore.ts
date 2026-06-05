@@ -118,6 +118,11 @@ export const updateProduct = async (id: string, data: Partial<Product>) => {
   await updateDoc(doc(db, 'products', id), data)
 }
 
+export const getProductById = async (id: string): Promise<Product | null> => {
+  const snap = await getDoc(doc(db, 'products', id))
+  return snap.exists() ? ({ id: snap.id, ...snap.data() } as Product) : null
+}
+
 export const deleteProduct = async (id: string) => {
   await deleteDoc(doc(db, 'products', id))
 }
