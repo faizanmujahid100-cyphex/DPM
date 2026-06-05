@@ -115,7 +115,9 @@ export const addProduct = async (data: Omit<Product, 'id' | 'createdAt'>) => {
 }
 
 export const updateProduct = async (id: string, data: Partial<Product>) => {
-  await updateDoc(doc(db, 'products', id), data)
+  // setDoc+merge is more reliable than updateDoc for adding new fields (like variants)
+  // to documents that were created before those fields existed.
+  await setDoc(doc(db, 'products', id), data, { merge: true })
 }
 
 export const getProductById = async (id: string): Promise<Product | null> => {

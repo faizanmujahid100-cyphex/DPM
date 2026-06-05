@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getProducts, addProduct, updateProduct, deleteProduct, getCategories } from '@/lib/firestore'
+import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, getProductById } from '@/lib/firestore'
 import { Product, Category, ProductVariant } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -386,8 +386,14 @@ export default function AdminProductsPage() {
   }
 
   const handleEdit = async (form: FormState) => {
-    if (!editProduct) return; setSaving(true)
+    if (!editProduct) return
+    setSaving(true)
+
     const variants = buildVariants(form)
+    // Log so admin can confirm data in browser DevTools console
+    console.log('[handleEdit] colorVariants in form:', form.colorVariants)
+    console.log('[handleEdit] variants to save:', variants)
+
     try {
       await updateProduct(editProduct.id, {
         name: form.name, category: form.category, price: Number(form.price),
@@ -395,13 +401,24 @@ export default function AdminProductsPage() {
         inStock: form.inStock, featured: form.featured,
         variants,
       })
-      const colorCount = variants.filter(v => v.type === 'color').length
-      const addonCount = variants.filter(v => v.type === 'package').length
-      toast.success(`Product updated!${colorCount ? ` ${colorCount} color(s)` : ''}${addonCount ? `, ${addonCount} add-on(s)` : ''} saved.`)
-      setEditProduct(null); await load()
+
+      // Verify by reading back from Firestore immediately
+      const saved = await getProductById(editProduct.id)
+      const savedColors = (saved?.variants ?? []).filter(v => v.type === 'color').length
+      const savedAddons = (saved?.variants ?? []).filter(v => v.type === 'package').length
+      console.log('[handleEdit] verified from Firestore:', saved?.variants)
+
+      if (savedColors === 0 && variants.filter(v => v.type === 'color').length > 0) {
+        toast.warning('Product saved but color variants missing in Firestore — check security rules or console.')
+      } else {
+        toast.success(`Saved ✓ — ${savedColors} color(s), ${savedAddons} add-on(s) in Firestore.`)
+      }
+
+      setEditProduct(null)
+      await load()
     } catch (err) {
-      console.error('[updateProduct]', err)
-      toast.error(`Failed to update: ${(err as Error)?.message ?? 'unknown error'}`)
+      console.error('[handleEdit] Firestore error:', err)
+      toast.error(`Save failed: ${(err as Error)?.message ?? String(err)}`)
     }
     setSaving(false)
   }
@@ -531,7 +548,10 @@ export default function AdminProductsPage() {
 
       {/* Add dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl"
+          onInteractOutside={e => e.preventDefault()}
+          onEscapeKeyDown={e => e.preventDefault()}>
+
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
@@ -547,7 +567,10 @@ export default function AdminProductsPage() {
 
       {/* Edit dialog */}
       <Dialog open={!!editProduct} onOpenChange={o => !o && setEditProduct(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl"
+          onInteractOutside={e => e.preventDefault()}
+          onEscapeKeyDown={e => e.preventDefault()}>
+
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
