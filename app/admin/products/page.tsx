@@ -324,11 +324,11 @@ export default function AdminProductsPage() {
 
   const buildVariants = (form: FormState): ProductVariant[] => [
     ...form.colorVariants
-      .filter(v => v.label.trim() && v.price)
-      .map(v => ({ label: v.label.trim(), price: Number(v.price), color: v.color, type: 'color' as const })),
+      .filter(v => v.label.trim())
+      .map(v => ({ label: v.label.trim(), price: Number(v.price) || 0, color: v.color, type: 'color' as const })),
     ...form.packageVariants
-      .filter(v => v.label.trim() && v.price)
-      .map(v => ({ label: v.label.trim(), price: Number(v.price), type: 'package' as const })),
+      .filter(v => v.label.trim())
+      .map(v => ({ label: v.label.trim(), price: Number(v.price) || 0, type: 'package' as const })),
   ]
 
   const handleAdd = async (e: React.FormEvent) => {
