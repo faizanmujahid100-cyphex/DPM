@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import ImageUpload from '@/components/ui/ImageUpload'
 import CloudImg from '@/components/ui/CloudImg'
-import { Plus, Pencil, Trash2, Package, Tag, Eye, X, Palette, Box, ArrowLeft } from 'lucide-react'
+import { Plus, Pencil, Trash2, Package, Tag, Eye, X, Palette, Box, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -55,11 +55,46 @@ function toVariants(f: FormState): ProductVariant[] {
   ]
 }
 
-const SWATCHES = [
-  '#000000', '#ffffff', '#6b7280', '#d1d5db',
-  '#ef4444', '#f97316', '#eab308', '#22c55e',
-  '#14b8a6', '#3b82f6', '#8b5cf6', '#ec4899',
-  '#1e3a8a', '#92400e', '#166534', '#7f1d1d',
+// Named colors — clicking auto-fills the name
+const NAMED_COLORS = [
+  { name: 'Black',       hex: '#000000' },
+  { name: 'White',       hex: '#ffffff' },
+  { name: 'Gray',        hex: '#6b7280' },
+  { name: 'Silver',      hex: '#d1d5db' },
+  { name: 'Red',         hex: '#ef4444' },
+  { name: 'Dark Red',    hex: '#b91c1c' },
+  { name: 'Maroon',      hex: '#7f1d1d' },
+  { name: 'Pink',        hex: '#f472b6' },
+  { name: 'Hot Pink',    hex: '#ec4899' },
+  { name: 'Orange',      hex: '#f97316' },
+  { name: 'Yellow',      hex: '#facc15' },
+  { name: 'Gold',        hex: '#b45309' },
+  { name: 'Light Green', hex: '#86efac' },
+  { name: 'Green',       hex: '#22c55e' },
+  { name: 'Dark Green',  hex: '#15803d' },
+  { name: 'Teal',        hex: '#14b8a6' },
+  { name: 'Sky Blue',    hex: '#7dd3fc' },
+  { name: 'Blue',        hex: '#3b82f6' },
+  { name: 'Navy',        hex: '#1e3a8a' },
+  { name: 'Purple',      hex: '#a78bfa' },
+  { name: 'Violet',      hex: '#7c3aed' },
+  { name: 'Brown',       hex: '#92400e' },
+  { name: 'Beige',       hex: '#d4b896' },
+  { name: 'Olive',       hex: '#4d7c0f' },
+]
+
+// Shade groups — shown in "Custom Shades" panel
+const SHADE_GROUPS = [
+  { family: 'Reds',    shades: [{ name: 'Rose', hex: '#ffe4e6' }, { name: 'Light Red', hex: '#fca5a5' }, { name: 'Red', hex: '#ef4444' }, { name: 'Dark Red', hex: '#dc2626' }, { name: 'Crimson', hex: '#b91c1c' }, { name: 'Maroon', hex: '#7f1d1d' }] },
+  { family: 'Pinks',   shades: [{ name: 'Blush', hex: '#fce7f3' }, { name: 'Light Pink', hex: '#fbcfe8' }, { name: 'Pink', hex: '#f472b6' }, { name: 'Hot Pink', hex: '#ec4899' }, { name: 'Deep Pink', hex: '#db2777' }, { name: 'Dark Pink', hex: '#9d174d' }] },
+  { family: 'Oranges', shades: [{ name: 'Peach', hex: '#fed7aa' }, { name: 'Light Orange', hex: '#fb923c' }, { name: 'Orange', hex: '#f97316' }, { name: 'Dark Orange', hex: '#ea580c' }, { name: 'Burnt Orange', hex: '#c2410c' }, { name: 'Rust', hex: '#9a3412' }] },
+  { family: 'Yellows', shades: [{ name: 'Cream', hex: '#fefce8' }, { name: 'Light Yellow', hex: '#fef08a' }, { name: 'Yellow', hex: '#facc15' }, { name: 'Gold', hex: '#eab308' }, { name: 'Dark Gold', hex: '#a16207' }, { name: 'Amber', hex: '#78350f' }] },
+  { family: 'Greens',  shades: [{ name: 'Mint', hex: '#d1fae5' }, { name: 'Light Green', hex: '#86efac' }, { name: 'Green', hex: '#22c55e' }, { name: 'Forest Green', hex: '#16a34a' }, { name: 'Dark Green', hex: '#15803d' }, { name: 'Olive', hex: '#4d7c0f' }] },
+  { family: 'Teals',   shades: [{ name: 'Light Teal', hex: '#ccfbf1' }, { name: 'Teal', hex: '#5eead4' }, { name: 'Dark Teal', hex: '#14b8a6' }, { name: 'Emerald', hex: '#059669' }, { name: 'Dark Emerald', hex: '#0f766e' }, { name: 'Forest Teal', hex: '#134e4a' }] },
+  { family: 'Blues',   shades: [{ name: 'Sky Blue', hex: '#bae6fd' }, { name: 'Light Blue', hex: '#7dd3fc' }, { name: 'Blue', hex: '#3b82f6' }, { name: 'Royal Blue', hex: '#2563eb' }, { name: 'Dark Blue', hex: '#1d4ed8' }, { name: 'Navy', hex: '#1e3a8a' }] },
+  { family: 'Purples', shades: [{ name: 'Lavender', hex: '#ede9fe' }, { name: 'Light Purple', hex: '#c4b5fd' }, { name: 'Purple', hex: '#a78bfa' }, { name: 'Violet', hex: '#7c3aed' }, { name: 'Dark Purple', hex: '#6d28d9' }, { name: 'Indigo', hex: '#4338ca' }] },
+  { family: 'Browns',  shades: [{ name: 'Beige', hex: '#d4b896' }, { name: 'Tan', hex: '#a87d52' }, { name: 'Brown', hex: '#92400e' }, { name: 'Dark Brown', hex: '#7c2d12' }, { name: 'Chocolate', hex: '#5c2d0e' }, { name: 'Mahogany', hex: '#7f1d1d' }] },
+  { family: 'Grays',   shades: [{ name: 'White', hex: '#ffffff' }, { name: 'Light Gray', hex: '#e5e7eb' }, { name: 'Gray', hex: '#9ca3af' }, { name: 'Dark Gray', hex: '#4b5563' }, { name: 'Charcoal', hex: '#1f2937' }, { name: 'Black', hex: '#000000' }] },
 ]
 
 // ── Full-page ProductForm ──────────────────────────────────────────────────────
@@ -86,6 +121,12 @@ function ProductForm({ initial, title, categories, onSave, onCancel, saving }: {
   const delAddon = (i: number) => setF(p => ({ ...p, addons: p.addons.filter((_, j) => j !== i) }))
   const setAddon = (i: number, k: keyof AddonRow, v: string) =>
     setF(p => ({ ...p, addons: p.addons.map((a, j) => j === i ? { ...a, [k]: v } : a) }))
+
+  const [customMode, setCustomMode] = useState<Set<number>>(new Set())
+  const pickColor = (i: number, hex: string, name: string) =>
+    setF(p => ({ ...p, colors: p.colors.map((c, j) => j === i ? { ...c, color: hex, label: name } : c) }))
+  const toggleMode = (i: number, toCustom: boolean) =>
+    setCustomMode(prev => { const s = new Set(prev); toCustom ? s.add(i) : s.delete(i); return s })
 
   return (
     <form onSubmit={e => { e.preventDefault(); onSave(f) }} className="space-y-6">
@@ -210,56 +251,111 @@ function ProductForm({ initial, title, categories, onSave, onCancel, saving }: {
               <p className="text-gray-400 text-sm">Click <strong>Add Color</strong> to let customers pick colors with different prices</p>
             </div>
           : <div className="space-y-3">
-              {f.colors.map((c, i) => (
-                <div key={i} className="bg-violet-50/50 border border-violet-100 rounded-xl p-4 space-y-3">
-                  {/* Main row */}
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <div className="w-10 h-10 rounded-full shrink-0 border-2 border-white shadow"
-                      style={{ backgroundColor: c.color }} />
-                    <Input placeholder="Color name  (e.g. Black, Navy Blue, Red)" value={c.label}
-                      onChange={e => setColor(i, 'label', e.target.value)}
-                      className="flex-1 min-w-48 bg-white" />
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-sm text-gray-500 font-medium whitespace-nowrap">Add-on price:</span>
-                      <div className="relative w-40">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-violet-600 font-bold">+PKR</span>
-                        <Input type="number" min="0" placeholder="0  (0 = same as base)" value={c.price}
-                          onChange={e => setColor(i, 'price', e.target.value)}
-                          className="pl-14 bg-white" />
+              {f.colors.map((c, i) => {
+                const isCustom = customMode.has(i)
+                return (
+                  <div key={i} className="bg-violet-50/50 border border-violet-100 rounded-xl p-4 space-y-3">
+
+                    {/* Row 1: preview + name (auto-filled) + price + delete */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="w-10 h-10 rounded-full shrink-0 border-2 border-white shadow"
+                        style={{ backgroundColor: c.color }} />
+                      <div className="flex-1 min-w-48 space-y-0.5">
+                        <Input
+                          placeholder="Select a color below — name fills automatically"
+                          value={c.label}
+                          onChange={e => setColor(i, 'label', e.target.value)}
+                          className="bg-white"
+                        />
+                        <p className="text-[10px] text-gray-400 pl-1">Auto-filled · you can still edit it</p>
                       </div>
-                    </div>
-                    {f.price && (
-                      <div className="shrink-0 bg-violet-600 text-white rounded-lg px-3 py-1.5 text-center min-w-28">
-                        <div className="text-[10px] font-medium opacity-80">Customer pays</div>
-                        <div className="text-sm font-extrabold">
-                          PKR {(Number(f.price) + (Number(c.price) || 0)).toLocaleString()}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm text-gray-500 font-medium whitespace-nowrap">Add-on price:</span>
+                        <div className="relative w-40">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-violet-600 font-bold">+PKR</span>
+                          <Input type="number" min="0" placeholder="0  (0 = same as base)" value={c.price}
+                            onChange={e => setColor(i, 'price', e.target.value)}
+                            className="pl-14 bg-white" />
                         </div>
                       </div>
-                    )}
-                    <button type="button" onClick={() => delColor(i)}
-                      className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0">
-                      <X className="w-4 h-4" />
-                    </button>
+                      {f.price && (
+                        <div className="shrink-0 bg-violet-600 text-white rounded-lg px-3 py-1.5 text-center min-w-28">
+                          <div className="text-[10px] font-medium opacity-80">Customer pays</div>
+                          <div className="text-sm font-extrabold">
+                            PKR {(Number(f.price) + (Number(c.price) || 0)).toLocaleString()}
+                          </div>
+                        </div>
+                      )}
+                      <button type="button" onClick={() => delColor(i)}
+                        className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Row 2: color picker */}
+                    <div className="space-y-2.5 pt-1 border-t border-violet-100">
+                      {/* Mode tabs */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400 font-medium mr-1">Pick color:</span>
+                        <button type="button" onClick={() => toggleMode(i, false)}
+                          className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${
+                            !isCustom ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200 hover:border-violet-300 hover:text-violet-600'
+                          }`}>
+                          Presets
+                        </button>
+                        <button type="button" onClick={() => toggleMode(i, true)}
+                          className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${
+                            isCustom ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200 hover:border-violet-300 hover:text-violet-600'
+                          }`}>
+                          Custom Shades
+                        </button>
+                      </div>
+
+                      {/* Preset named colors */}
+                      {!isCustom && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {NAMED_COLORS.map(({ name, hex }) => (
+                            <button key={hex} type="button" onClick={() => pickColor(i, hex, name)}
+                              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                                c.color === hex
+                                  ? 'border-violet-500 bg-violet-100 text-violet-800 shadow-sm scale-105'
+                                  : 'border-gray-200 bg-white text-gray-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700'
+                              }`}>
+                              <span className="w-3.5 h-3.5 rounded-full shrink-0 border border-black/10"
+                                style={{ backgroundColor: hex }} />
+                              {name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Custom shade groups */}
+                      {isCustom && (
+                        <div className="space-y-1.5">
+                          {SHADE_GROUPS.map(({ family, shades }) => (
+                            <div key={family} className="flex items-center gap-2">
+                              <span className="text-[11px] text-gray-400 font-medium w-16 shrink-0 text-right">{family}</span>
+                              <div className="flex gap-1.5 flex-wrap">
+                                {shades.map(({ name, hex }) => (
+                                  <button key={hex} type="button" title={name}
+                                    onClick={() => pickColor(i, hex, name)}
+                                    className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${
+                                      c.color === hex
+                                        ? 'ring-2 ring-violet-500 ring-offset-2 scale-110 border-white'
+                                        : 'border-gray-200 hover:border-gray-400'
+                                    }`}
+                                    style={{ backgroundColor: hex }} />
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                   </div>
-                  {/* Swatches */}
-                  <div className="flex flex-wrap items-center gap-2 pl-13">
-                    <span className="text-xs text-gray-400 mr-1">Pick color:</span>
-                    {SWATCHES.map(hex => (
-                      <button key={hex} type="button" title={hex}
-                        onClick={() => setColor(i, 'color', hex)}
-                        className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${
-                          c.color === hex
-                            ? 'ring-2 ring-violet-500 ring-offset-2 scale-110 border-white'
-                            : 'border-gray-200 hover:border-gray-400'
-                        }`}
-                        style={{ backgroundColor: hex }} />
-                    ))}
-                    <input type="text" value={c.color} maxLength={7} placeholder="#000000"
-                      onChange={e => setColor(i, 'color', e.target.value)}
-                      className="ml-2 w-24 text-xs font-mono border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white" />
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
         }
       </div>
