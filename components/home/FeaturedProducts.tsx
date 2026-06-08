@@ -46,7 +46,9 @@ export default function FeaturedProducts() {
 
   if (products.length === 0) return null
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     addItem({ productId: product.id, productName: product.name, price: product.price, quantity: 1, imageUrl: product.imageUrl, category: product.category })
     toast.success(`${product.name} added to cart!`)
   }
@@ -64,12 +66,13 @@ export default function FeaturedProducts() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {products.map(product => (
-            <div key={product.id} className="group bg-gray-50 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1 flex flex-col">
-              <div className={`relative h-44 bg-gradient-to-br ${gradients[product.category] ?? 'from-violet-500 to-purple-600'} flex items-center justify-center`}>
+            <Link key={product.id} href={`/products/${product.id}`}
+              className="group bg-gray-50 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1 flex flex-col cursor-pointer">
+              <div className={`relative aspect-[4/3] bg-gradient-to-br ${gradients[product.category] ?? 'from-violet-500 to-purple-600'} flex items-center justify-center`}>
                 <CloudImg
                   src={product.imageUrl}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                   fallback={<Package className="w-14 h-14 text-white/50" />}
                 />
                 {product.featured && (
@@ -78,16 +81,16 @@ export default function FeaturedProducts() {
               </div>
               <div className="p-5 flex flex-col flex-1">
                 <div className="text-xs text-gray-400 capitalize mb-1">{product.category.replace('-', ' ')}</div>
-                <h3 className="font-bold text-gray-900 mb-1">{product.name}</h3>
+                <h3 className="font-bold text-gray-900 mb-1 group-hover:text-violet-700 transition-colors">{product.name}</h3>
                 <p className="text-gray-500 text-sm mb-4 flex-1 line-clamp-2">{product.description}</p>
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                   <div className="text-violet-700 font-bold">PKR {product.price.toLocaleString()}</div>
-                  <Button size="sm" onClick={() => handleAddToCart(product)} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
+                  <Button size="sm" onClick={e => handleAddToCart(product, e)} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
                     <ShoppingCart className="w-3.5 h-3.5" /> Add
                   </Button>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 

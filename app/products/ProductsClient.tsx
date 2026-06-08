@@ -8,7 +8,7 @@ import CloudImg from '@/components/ui/CloudImg'
 import { useCart } from '@/contexts/CartContext'
 import { getProducts, getCategories } from '@/lib/firestore'
 import { Product, Category } from '@/types'
-import { ShoppingCart, Package, Eye } from 'lucide-react'
+import { ShoppingCart, Package } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -44,7 +44,9 @@ export default function ProductsClient() {
     ? products
     : products.filter(p => p.category === activeCategory)
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     addItem({ productId: product.id, productName: product.name, price: product.price, quantity: 1, imageUrl: product.imageUrl, category: product.category })
     toast.success(`${product.name} added to cart!`)
   }
@@ -110,14 +112,15 @@ export default function ProductsClient() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filtered.map(product => (
-                    <div key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col">
-                      <div className={`relative h-48 bg-gradient-to-br ${getCategoryColor(product.category)} flex items-center justify-center`}>
-                        <CloudImg src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" fallback={<Package className="w-16 h-16 text-white/50" />} />
+                    <Link key={product.id} href={`/products/${product.id}`}
+                      className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col cursor-pointer">
+                      <div className={`relative aspect-[4/3] bg-gradient-to-br ${getCategoryColor(product.category)} flex items-center justify-center`}>
+                        <CloudImg src={product.imageUrl} alt={product.name} className="w-full h-full object-contain" fallback={<Package className="w-16 h-16 text-white/50" />} />
                         {product.featured && <Badge className="absolute top-3 left-3 bg-orange-500 text-white border-0 shadow-md">Featured</Badge>}
                       </div>
                       <div className="p-5 flex flex-col flex-1">
                         <div className="text-xs text-violet-600 font-medium mb-1 capitalize">{getCategoryName(product.category)}</div>
-                        <h3 className="font-bold text-gray-900 mb-1">{product.name}</h3>
+                        <h3 className="font-bold text-gray-900 mb-1 group-hover:text-violet-700 transition-colors">{product.name}</h3>
                         <p className="text-gray-500 text-sm leading-relaxed mb-4 flex-1 line-clamp-2">{product.description}</p>
                         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                           <div>
@@ -126,19 +129,12 @@ export default function ProductsClient() {
                             </div>
                             <div className="text-violet-700 font-bold text-lg">PKR {product.price.toLocaleString()}</div>
                           </div>
-                          <div className="flex gap-1.5">
-                            <Link href={`/products/${product.id}`}>
-                              <Button size="sm" variant="outline" className="gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50">
-                                <Eye className="w-3.5 h-3.5" /> View
-                              </Button>
-                            </Link>
-                            <Button size="sm" onClick={() => handleAddToCart(product)} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
-                              <ShoppingCart className="w-3.5 h-3.5" /> Add
-                            </Button>
-                          </div>
+                          <Button size="sm" onClick={e => handleAddToCart(product, e)} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
+                            <ShoppingCart className="w-3.5 h-3.5" /> Add
+                          </Button>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
