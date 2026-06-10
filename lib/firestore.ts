@@ -15,7 +15,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import { User, Category, Product, Service, Order, ServiceRequest, OrderFormField, OrderStatus, ServiceRequestStatus, TeamMember } from '@/types'
+import { User, Category, Product, Service, Order, ServiceRequest, OrderFormField, OrderStatus, ServiceRequestStatus, TeamMember, ContactInfo } from '@/types'
 
 // ── Order Form Fields ──────────────────────────────────────────────────────────
 
@@ -71,6 +71,30 @@ export const updateCategory = async (id: string, data: Partial<Omit<Category, 'i
 
 export const deleteCategory = async (id: string) => {
   await deleteDoc(doc(db, 'categories', id))
+}
+
+// Contact Info
+
+export const DEFAULT_CONTACT: ContactInfo = {
+  phone: '+92 300 0000000',
+  phoneLink: '',
+  whatsapp: '+92 300 0000000',
+  whatsappLink: '',
+  email: 'info@dpmprinting.com',
+  address: 'DPM Printing Center\nMain Branch, Pakistan',
+  mapLink: '',
+  hours: 'Mon–Sat: 9AM – 9PM\nSunday: 10AM – 6PM',
+  facebookUrl: '',
+  instagramUrl: '',
+}
+
+export const getContactInfo = async (): Promise<ContactInfo> => {
+  const snap = await getDoc(doc(db, 'settings', 'contact'))
+  return snap.exists() ? { ...DEFAULT_CONTACT, ...snap.data() } as ContactInfo : DEFAULT_CONTACT
+}
+
+export const updateContactInfo = async (data: Partial<ContactInfo>) => {
+  await setDoc(doc(db, 'settings', 'contact'), data, { merge: true })
 }
 
 // Team Members

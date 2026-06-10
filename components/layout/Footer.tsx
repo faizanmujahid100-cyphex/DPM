@@ -1,7 +1,26 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Printer, Phone, Mail, MapPin, Share2, MessageCircle, AtSign } from 'lucide-react'
+import { Printer, Phone, Mail, MapPin, MessageCircle, Globe, AtSign } from 'lucide-react'
+import { getContactInfo, DEFAULT_CONTACT } from '@/lib/firestore'
+import { ContactInfo } from '@/types'
 
 export default function Footer() {
+  const [contact, setContact] = useState<ContactInfo>(DEFAULT_CONTACT)
+
+  useEffect(() => {
+    getContactInfo().then(setContact).catch(() => {})
+  }, [])
+
+  const phoneHref = contact.phoneLink || `tel:${contact.phone.replace(/\s+/g, '')}`
+
+  const socialLinks = [
+    { icon: Globe, href: contact.facebookUrl },
+    { icon: MessageCircle, href: contact.whatsappLink },
+    { icon: AtSign, href: contact.instagramUrl },
+  ].filter((s): s is { icon: typeof Globe; href: string } => !!s.href)
+
   return (
     <footer className="bg-gradient-to-b from-violet-950 to-slate-950 text-white">
       <div className="container mx-auto px-4 py-16">
@@ -20,13 +39,15 @@ export default function Footer() {
               Premier graphic design and printing solutions. From business cards to custom apparel,
               we bring your vision to life with precision and passion.
             </p>
-            <div className="flex gap-3 mt-5">
-              {[Share2, MessageCircle, AtSign].map((Icon, i) => (
-                <a key={i} href="#" className="w-9 h-9 rounded-full bg-white/10 hover:bg-orange-500 flex items-center justify-center transition-colors">
-                  <Icon className="w-4 h-4" />
-                </a>
-              ))}
-            </div>
+            {socialLinks.length > 0 && (
+              <div className="flex gap-3 mt-5">
+                {socialLinks.map(({ icon: Icon, href }, i) => (
+                  <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 hover:bg-orange-500 flex items-center justify-center transition-colors">
+                    <Icon className="w-4 h-4" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
@@ -54,15 +75,19 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start gap-3 text-sm text-violet-300">
                 <MapPin className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
-                <span>DPM Printing Center<br />Main Branch, Pakistan</span>
+                {contact.mapLink ? (
+                  <a href={contact.mapLink} target="_blank" rel="noopener noreferrer" className="whitespace-pre-line hover:text-orange-300 transition-colors">{contact.address}</a>
+                ) : (
+                  <span className="whitespace-pre-line">{contact.address}</span>
+                )}
               </li>
               <li className="flex items-center gap-3 text-sm text-violet-300">
                 <Phone className="w-4 h-4 text-orange-400 shrink-0" />
-                <span>+92 300 0000000</span>
+                <a href={phoneHref} className="hover:text-orange-300 transition-colors">{contact.phone}</a>
               </li>
               <li className="flex items-center gap-3 text-sm text-violet-300">
                 <Mail className="w-4 h-4 text-orange-400 shrink-0" />
-                <span>info@dpmprinting.com</span>
+                <a href={`mailto:${contact.email}`} className="hover:text-orange-300 transition-colors">{contact.email}</a>
               </li>
             </ul>
           </div>

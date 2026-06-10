@@ -7,13 +7,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Share2, AtSign } from 'lucide-react'
-import { useState } from 'react'
+import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Globe, AtSign } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { getContactInfo, DEFAULT_CONTACT } from '@/lib/firestore'
+import { ContactInfo } from '@/types'
 
 export default function ContactPage() {
   const [sending, setSending] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' })
+  const [contact, setContact] = useState<ContactInfo>(DEFAULT_CONTACT)
+
+  useEffect(() => {
+    getContactInfo().then(setContact).catch(() => {})
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,6 +30,22 @@ export default function ContactPage() {
     toast.success("Message sent! We'll reply within 24 hours.")
     setForm({ name: '', email: '', phone: '', subject: '', message: '' })
   }
+
+  const phoneHref = contact.phoneLink || `tel:${contact.phone.replace(/\s+/g, '')}`
+
+  const infoItems = [
+    { icon: Phone, label: 'Phone', value: contact.phone, href: phoneHref, color: 'bg-violet-100 text-violet-600' },
+    { icon: MessageCircle, label: 'WhatsApp', value: contact.whatsapp, href: contact.whatsappLink || undefined, color: 'bg-green-100 text-green-600' },
+    { icon: Mail, label: 'Email', value: contact.email, href: `mailto:${contact.email}`, color: 'bg-orange-100 text-orange-600' },
+    { icon: MapPin, label: 'Address', value: contact.address, href: contact.mapLink || undefined, color: 'bg-green-100 text-green-600' },
+    { icon: Clock, label: 'Hours', value: contact.hours, href: undefined, color: 'bg-blue-100 text-blue-600' },
+  ]
+
+  const socialLinks = [
+    { icon: Globe, href: contact.facebookUrl },
+    { icon: MessageCircle, href: contact.whatsappLink },
+    { icon: AtSign, href: contact.instagramUrl },
+  ].filter((s): s is { icon: typeof Globe; href: string } => !!s.href)
 
   return (
     <MainLayout>
@@ -47,33 +70,42 @@ export default function ContactPage() {
                 <p className="text-gray-500 leading-relaxed">We&apos;re here to help with any printing or design project, big or small.</p>
               </div>
 
-              {[
-                { icon: Phone, label: 'Phone', value: '+92 300 0000000', color: 'bg-violet-100 text-violet-600' },
-                { icon: Mail, label: 'Email', value: 'info@dpmprinting.com', color: 'bg-orange-100 text-orange-600' },
-                { icon: MapPin, label: 'Address', value: 'DPM Printing Center\nMain Branch, Pakistan', color: 'bg-green-100 text-green-600' },
-                { icon: Clock, label: 'Hours', value: 'Mon–Sat: 9AM – 9PM\nSunday: 10AM – 6PM', color: 'bg-blue-100 text-blue-600' },
-              ].map(({ icon: Icon, label, value, color }) => (
-                <div key={label} className="flex items-start gap-4 p-4 bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-shadow">
-                  <div className={`w-11 h-11 rounded-xl ${color} flex items-center justify-center shrink-0`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{label}</div>
-                    <div className="text-gray-800 font-medium whitespace-pre-line">{value}</div>
-                  </div>
-                </div>
-              ))}
-
-              <div className="p-4 bg-white rounded-2xl border border-gray-100">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Follow Us</p>
-                <div className="flex gap-3">
-                  {[Share2, MessageCircle, AtSign].map((Icon, i) => (
-                    <a key={i} href="#" className="w-10 h-10 rounded-full bg-violet-100 hover:bg-violet-600 hover:text-white text-violet-600 flex items-center justify-center transition-colors">
+              {infoItems.filter(item => item.value).map(({ icon: Icon, label, value, href, color }) => {
+                const content = (
+                  <>
+                    <div className={`w-11 h-11 rounded-xl ${color} flex items-center justify-center shrink-0`}>
                       <Icon className="w-5 h-5" />
-                    </a>
-                  ))}
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{label}</div>
+                      <div className="text-gray-800 font-medium whitespace-pre-line">{value}</div>
+                    </div>
+                  </>
+                )
+                return href ? (
+                  <a key={label} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                    className="flex items-start gap-4 p-4 bg-white rounded-2xl border border-gray-100 hover:shadow-md hover:border-violet-200 transition-all">
+                    {content}
+                  </a>
+                ) : (
+                  <div key={label} className="flex items-start gap-4 p-4 bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-shadow">
+                    {content}
+                  </div>
+                )
+              })}
+
+              {socialLinks.length > 0 && (
+                <div className="p-4 bg-white rounded-2xl border border-gray-100">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Follow Us</p>
+                  <div className="flex gap-3">
+                    {socialLinks.map(({ icon: Icon, href }, i) => (
+                      <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-violet-100 hover:bg-violet-600 hover:text-white text-violet-600 flex items-center justify-center transition-colors">
+                        <Icon className="w-5 h-5" />
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="lg:col-span-3 bg-white rounded-3xl p-8 shadow-sm border border-gray-100">

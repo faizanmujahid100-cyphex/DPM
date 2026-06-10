@@ -104,6 +104,19 @@ export interface OrderFormField {
   order: number
 }
 
+export interface ContactInfo {
+  phone: string
+  phoneLink: string
+  whatsapp: string
+  whatsappLink: string
+  email: string
+  address: string
+  mapLink: string
+  hours: string
+  facebookUrl: string
+  instagramUrl: string
+}
+
 export interface TeamMember {
   id: string
   name: string
