@@ -104,6 +104,17 @@ export interface OrderFormField {
   order: number
 }
 
+export interface TeamMember {
+  id: string
+  name: string
+  role: string
+  imageUrl?: string
+  initials: string
+  color: string
+  order: number
+  createdAt: Timestamp
+}
+
 export type ServiceRequestStatus = 'submitted' | 'reviewing' | 'in_progress' | 'completed' | 'cancelled'
 
 export interface ServiceRequest {

@@ -15,7 +15,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import { User, Category, Product, Service, Order, ServiceRequest, OrderFormField, OrderStatus, ServiceRequestStatus } from '@/types'
+import { User, Category, Product, Service, Order, ServiceRequest, OrderFormField, OrderStatus, ServiceRequestStatus, TeamMember } from '@/types'
 
 // ── Order Form Fields ──────────────────────────────────────────────────────────
 
@@ -71,6 +71,40 @@ export const updateCategory = async (id: string, data: Partial<Omit<Category, 'i
 
 export const deleteCategory = async (id: string) => {
   await deleteDoc(doc(db, 'categories', id))
+}
+
+// Team Members
+
+const DEFAULT_TEAM: Omit<TeamMember, 'id' | 'createdAt'>[] = [
+  { name: 'Muhammad Ali', role: 'Founder & CEO', initials: 'MA', color: 'from-violet-500 to-purple-600', order: 1 },
+  { name: 'Hassan Raza', role: 'Lead Designer', initials: 'HR', color: 'from-orange-500 to-pink-500', order: 2 },
+  { name: 'Ayesha Khan', role: 'Production Manager', initials: 'AK', color: 'from-green-500 to-teal-600', order: 3 },
+  { name: 'Zain Ahmed', role: 'Customer Relations', initials: 'ZA', color: 'from-blue-500 to-indigo-600', order: 4 },
+]
+
+export const getTeamMembers = async (): Promise<TeamMember[]> => {
+  const snap = await getDocs(query(collection(db, 'teamMembers'), orderBy('order', 'asc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as TeamMember))
+}
+
+export const seedDefaultTeamMembers = async (): Promise<void> => {
+  const existing = await getTeamMembers()
+  if (existing.length > 0) return
+  for (const member of DEFAULT_TEAM) {
+    await addDoc(collection(db, 'teamMembers'), { ...member, createdAt: serverTimestamp() })
+  }
+}
+
+export const addTeamMember = async (data: Omit<TeamMember, 'id' | 'createdAt'>) => {
+  return addDoc(collection(db, 'teamMembers'), { ...data, createdAt: serverTimestamp() })
+}
+
+export const updateTeamMember = async (id: string, data: Partial<Omit<TeamMember, 'id' | 'createdAt'>>) => {
+  await updateDoc(doc(db, 'teamMembers', id), data)
+}
+
+export const deleteTeamMember = async (id: string) => {
+  await deleteDoc(doc(db, 'teamMembers', id))
 }
 
 // Users

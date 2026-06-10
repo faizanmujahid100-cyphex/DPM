@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Printer, LayoutDashboard, Package, ShoppingBag, Users, Layers, LogOut, Menu, X, Home, Settings, Tag, ClipboardList } from 'lucide-react'
+import { Printer, LayoutDashboard, Package, ShoppingBag, Users, Layers, LogOut, Menu, X, Home, Settings, Tag, ClipboardList, UserCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import UserAvatar from '@/components/ui/UserAvatar'
 
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/services', label: 'Services', icon: Layers },
   { href: '/admin/designers', label: 'Designers', icon: Users },
+  { href: '/admin/team', label: 'Team', icon: UserCircle2 },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

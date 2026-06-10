@@ -1,15 +1,9 @@
 import MainLayout from '@/components/layout/MainLayout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import TeamSection from '@/components/about/TeamSection'
 import Link from 'next/link'
 import { Award, Target, Heart, Users, ArrowRight } from 'lucide-react'
-
-const team = [
-  { name: 'Muhammad Ali', role: 'Founder & CEO', initials: 'MA', color: 'from-violet-500 to-purple-600' },
-  { name: 'Hassan Raza', role: 'Lead Designer', initials: 'HR', color: 'from-orange-500 to-pink-500' },
-  { name: 'Ayesha Khan', role: 'Production Manager', initials: 'AK', color: 'from-green-500 to-teal-600' },
-  { name: 'Zain Ahmed', role: 'Customer Relations', initials: 'ZA', color: 'from-blue-500 to-indigo-600' },
-]
 
 const values = [
   { icon: Award, title: 'Quality First', desc: 'We never compromise on quality. Every print is inspected before delivery.' },
@@ -94,17 +88,7 @@ export default function AboutPage() {
             <Badge className="mb-3 bg-violet-100 text-violet-700 border-violet-200">Meet the Team</Badge>
             <h2 className="text-4xl font-bold text-gray-900">The People Behind DPM</h2>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {team.map(({ name, role, initials, color }) => (
-              <div key={name} className="text-center group">
-                <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${color} flex items-center justify-center mx-auto mb-4 shadow-xl text-white text-2xl font-bold group-hover:scale-110 transition-transform`}>
-                  {initials}
-                </div>
-                <div className="font-bold text-gray-900">{name}</div>
-                <div className="text-gray-500 text-sm">{role}</div>
-              </div>
-            ))}
-          </div>
+          <TeamSection />
         </div>
       </section>
 
