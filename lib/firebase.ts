@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { initializeFirestore, getFirestore } from 'firebase/firestore'
 import { getAnalytics, isSupported } from 'firebase/analytics'
 
 const firebaseConfig = {
@@ -13,9 +13,13 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 }
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+const isNewApp = getApps().length === 0
+const app = isNewApp ? initializeApp(firebaseConfig) : getApps()[0]
 export const auth = getAuth(app)
-export const db = getFirestore(app)
+// initializeFirestore must run once per app; reuse the instance on hot-reload/re-import.
+export const db = isNewApp
+  ? initializeFirestore(app, { ignoreUndefinedProperties: true })
+  : getFirestore(app)
 
 // Analytics only runs in the browser (not during SSR)
 export const analyticsPromise = typeof window !== 'undefined'
