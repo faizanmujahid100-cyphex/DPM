@@ -284,7 +284,10 @@ export default function AdminCategoriesPage() {
               <Label>Parent Category (optional)</Label>
               <Select
                 value={form.parentId || '__none__'}
-                onValueChange={v => setForm(p => ({ ...p, parentId: (!v || v === '__none__') ? '' : v }))}
+                onValueChange={v => {
+                  const parentId = (v && v !== '__none__') ? v : ''
+                  setForm(p => ({ ...p, parentId }))
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Top-level category" />
