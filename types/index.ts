@@ -22,6 +22,7 @@ export interface Category {
   slug: string
   imageUrl: string
   color: string
+  parentId?: string | null
   createdAt: Timestamp
 }
 
@@ -29,6 +30,7 @@ export interface Product {
   id: string
   name: string
   category: string
+  secondaryCategory?: string
   price: number
   description: string
   imageUrl: string

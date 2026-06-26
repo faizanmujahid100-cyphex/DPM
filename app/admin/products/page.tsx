@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import ImageUpload from '@/components/ui/ImageUpload'
+import MultiImageUpload from '@/components/ui/MultiImageUpload'
 import CloudImg from '@/components/ui/CloudImg'
 import { Plus, Pencil, Trash2, Package, Tag, Eye, X, Palette, Box, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
@@ -22,22 +22,23 @@ interface ColorRow { label: string; price: string; color: string }
 interface AddonRow { label: string; price: string }
 
 interface FormState {
-  name: string; category: string; price: string; description: string
-  imageUrl: string; inStock: boolean; featured: boolean
+  name: string; category: string; secondaryCategory: string; price: string; description: string
+  images: string[]; inStock: boolean; featured: boolean
   colors: ColorRow[]
   addons: AddonRow[]
 }
 
 const BLANK: FormState = {
-  name: '', category: '', price: '', description: '',
-  imageUrl: '', inStock: true, featured: false,
+  name: '', category: '', secondaryCategory: '', price: '', description: '',
+  images: [], inStock: true, featured: false,
   colors: [], addons: [],
 }
 
 function toForm(p: Product): FormState {
+  const imgs = p.images?.length ? p.images : (p.imageUrl ? [p.imageUrl] : [])
   return {
-    name: p.name, category: p.category, price: String(p.price),
-    description: p.description, imageUrl: p.imageUrl,
+    name: p.name, category: p.category, secondaryCategory: p.secondaryCategory ?? '',
+    price: String(p.price), description: p.description, images: imgs,
     inStock: p.inStock, featured: p.featured,
     colors: (p.variants ?? []).filter(v => v.type === 'color')
       .map(v => ({ label: v.label, price: String(v.price), color: v.color ?? '#000000' })),
@@ -154,9 +155,8 @@ function ProductForm({ initial, title, categories, onSave, onCancel, saving }: {
 
         {/* Image */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Product Image</p>
-          <ImageUpload value={f.imageUrl} onChange={url => set('imageUrl', url)}
-            label="Upload Product Image" folder="dpm/products" />
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Product Images (up to 5)</p>
+          <MultiImageUpload values={f.images} onChange={urls => set('images', urls)} folder="dpm/products" />
 
           <div className="pt-2 border-t border-gray-100 space-y-3">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Visibility</p>
@@ -188,7 +188,7 @@ function ProductForm({ initial, title, categories, onSave, onCancel, saving }: {
                 onChange={e => set('name', e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="font-semibold">Category *</Label>
+              <Label className="font-semibold">Primary Category *</Label>
               {categories.length === 0
                 ? <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-2.5">
                     No categories. <Link href="/admin/categories" className="underline font-semibold">Add first →</Link>
@@ -202,6 +202,26 @@ function ProductForm({ initial, title, categories, onSave, onCancel, saving }: {
               }
             </div>
           </div>
+
+          {/* Secondary category */}
+          {categories.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="font-semibold">Secondary Category <span className="font-normal text-gray-400">(optional)</span></Label>
+              <Select
+                value={f.secondaryCategory || '__none__'}
+                onValueChange={v => set('secondaryCategory', v === '__none__' ? '' : v)}
+              >
+                <SelectTrigger><SelectValue placeholder="None (product belongs to one category)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— None —</SelectItem>
+                  {categories
+                    .filter(c => c.slug !== f.category)
+                    .map(c => <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-400">Product will also appear when filtering by this category.</p>
+            </div>
+          )}
 
           <div className="space-y-1.5 max-w-xs">
             <Label className="font-semibold">Base Price (PKR) *</Label>
@@ -470,10 +490,13 @@ export default function AdminProductsPage() {
   const handleAdd = async (f: FormState) => {
     setSaving(true)
     const variants = toVariants(f)
+    const imageUrl = f.images[0] ?? ''
     try {
       await addProduct({
-        name: f.name, category: f.category, price: Number(f.price),
-        description: f.description, imageUrl: f.imageUrl,
+        name: f.name, category: f.category,
+        secondaryCategory: f.secondaryCategory || undefined,
+        price: Number(f.price),
+        description: f.description, imageUrl, images: f.images,
         inStock: f.inStock, featured: f.featured, variants,
       })
       toast.success(`Product added — ${variants.filter(v => v.type === 'color').length} color(s) saved.`)
@@ -489,10 +512,13 @@ export default function AdminProductsPage() {
     if (!editProduct) return
     setSaving(true)
     const variants = toVariants(f)
+    const imageUrl = f.images[0] ?? ''
     try {
       await updateProduct(editProduct.id, {
-        name: f.name, category: f.category, price: Number(f.price),
-        description: f.description, imageUrl: f.imageUrl,
+        name: f.name, category: f.category,
+        secondaryCategory: f.secondaryCategory || undefined,
+        price: Number(f.price),
+        description: f.description, imageUrl, images: f.images,
         inStock: f.inStock, featured: f.featured, variants,
       })
       toast.success(`Saved — ${variants.filter(v => v.type === 'color').length} color(s), ${variants.filter(v => v.type === 'package').length} add-on(s).`)

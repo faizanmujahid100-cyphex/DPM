@@ -42,7 +42,7 @@ export default function ProductsClient() {
 
   const filtered = activeCategory === 'all'
     ? products
-    : products.filter(p => p.category === activeCategory)
+    : products.filter(p => p.category === activeCategory || p.secondaryCategory === activeCategory)
 
   const handleAddToCart = (product: Product, e: React.MouseEvent) => {
     e.preventDefault()

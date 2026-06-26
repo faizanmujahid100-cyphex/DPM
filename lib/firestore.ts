@@ -187,6 +187,10 @@ export const deleteProduct = async (id: string) => {
   await deleteDoc(doc(db, 'products', id))
 }
 
+export const batchUpdateProducts = async (updates: { id: string; data: Partial<Product> }[]) => {
+  await Promise.all(updates.map(({ id, data }) => updateProduct(id, data)))
+}
+
 // Services
 export const getServices = async (): Promise<Service[]> => {
   const q = query(collection(db, 'services'), where('active', '==', true))

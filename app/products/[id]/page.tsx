@@ -22,8 +22,9 @@ export default function ProductDetailPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading,    setLoading]    = useState(true)
   const [selectedColor,  setSelectedColor]  = useState<ProductVariant | null>(null)
-  const [selectedAddons, setSelectedAddons] = useState<ProductVariant[]>([])   // multi-select, none by default
+  const [selectedAddons, setSelectedAddons] = useState<ProductVariant[]>([])
   const [quantity, setQuantity] = useState(1)
+  const [activeImageIdx, setActiveImageIdx] = useState(0)
 
   useEffect(() => {
     Promise.all([getProductById(id), getCategories()])
@@ -103,6 +104,8 @@ export default function ProductDetailPage() {
   )
 
   const catColor = getCategoryColor(product.category)
+  const allImages = product.images?.length ? product.images : (product.imageUrl ? [product.imageUrl] : [])
+  const activeImage = allImages[activeImageIdx] ?? ''
 
   return (
     <MainLayout>
@@ -125,13 +128,14 @@ export default function ProductDetailPage() {
         <div className="container mx-auto px-4 max-w-6xl py-10">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
 
-            {/* ══════════════ LEFT — image ══════════════ */}
-            <div className="lg:sticky lg:top-20">
+            {/* ══════════════ LEFT — image gallery ══════════════ */}
+            <div className="lg:sticky lg:top-20 space-y-3">
+              {/* Main image */}
               <div className={`relative aspect-square w-full rounded-2xl overflow-hidden bg-gradient-to-br ${catColor} shadow-sm border border-gray-100`}>
-                {product.imageUrl ? (
+                {activeImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={product.imageUrl}
+                    src={activeImage}
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />
@@ -154,7 +158,30 @@ export default function ProductDetailPage() {
                     </span>
                   </div>
                 )}
+
+                {/* Image counter */}
+                {allImages.length > 1 && (
+                  <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                    {activeImageIdx + 1} / {allImages.length}
+                  </div>
+                )}
               </div>
+
+              {/* Thumbnails */}
+              {allImages.length > 1 && (
+                <div className="flex gap-2">
+                  {allImages.map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveImageIdx(i)}
+                      className={`w-16 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${i === activeImageIdx ? 'border-violet-500 shadow-md scale-105' : 'border-gray-200 hover:border-violet-300'}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img} alt={`View ${i + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* ══════════════ RIGHT — details ══════════════ */}
