@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import CloudImg from '@/components/ui/CloudImg'
 import { useCart } from '@/contexts/CartContext'
 import { getProducts, getCategories } from '@/lib/firestore'
 import { Product, Category } from '@/types'
-import { ShoppingCart, Package } from 'lucide-react'
+import { ShoppingCart, Package, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -17,12 +17,14 @@ export default function ProductsClient() {
   const searchParams = useSearchParams()
   const urlCategory = searchParams.get('category') ?? 'all'
 
-  const [products, setProducts] = useState<Product[]>([])
+  const [products,   setProducts]   = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activeCategory, setActiveCategory] = useState(urlCategory)
+  const [loading,    setLoading]    = useState(true)
 
-  useEffect(() => { setActiveCategory(urlCategory) }, [urlCategory])
+  // activeCategory is always a top-level slug (or 'all')
+  // activeSubCategory is a sub-level slug (or null)
+  const [activeCategory,    setActiveCategory]    = useState('all')
+  const [activeSubCategory, setActiveSubCategory] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -34,21 +36,75 @@ export default function ProductsClient() {
       .finally(() => setLoading(false))
   }, [])
 
+  // Once categories are loaded, resolve the URL param into top-level + optional sub
+  useEffect(() => {
+    if (categories.length === 0) return
+    if (urlCategory === 'all') { setActiveCategory('all'); setActiveSubCategory(null); return }
+
+    const cat = categories.find(c => c.slug === urlCategory)
+    if (!cat) { setActiveCategory('all'); setActiveSubCategory(null); return }
+
+    if (!cat.parentId) {
+      // It's a top-level category
+      setActiveCategory(cat.slug)
+      setActiveSubCategory(null)
+    } else {
+      // It's a sub-category — find its parent
+      const parent = categories.find(c => c.id === cat.parentId)
+      setActiveCategory(parent?.slug ?? 'all')
+      setActiveSubCategory(cat.slug)
+    }
+  }, [urlCategory, categories])
+
+  const topLevel    = useMemo(() => categories.filter(c => !c.parentId), [categories])
+  const getChildren = (id: string) => categories.filter(c => c.parentId === id)
+
+  const activeCatObj  = categories.find(c => c.slug === activeCategory) ?? null
+  const subCats       = activeCatObj ? getChildren(activeCatObj.id) : []
+
+  // All slugs in the active top-level tree
+  const treeSlugSet = useMemo(() => {
+    if (!activeCatObj) return new Set<string>()
+    const children = getChildren(activeCatObj.id)
+    return new Set([activeCatObj.slug, ...children.map(c => c.slug)])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCatObj, categories])
+
+  const filtered = useMemo(() => {
+    if (activeCategory === 'all') return products
+
+    if (activeSubCategory) {
+      // Filter by exact sub-category (primary or secondary)
+      const matched    = products.filter(p => p.category === activeSubCategory || p.secondaryCategory === activeSubCategory)
+      const primary    = matched.filter(p => p.category === activeSubCategory)
+      const secondary  = matched.filter(p => p.category !== activeSubCategory)
+      return [...primary, ...secondary]
+    }
+
+    // Filter by entire top-level tree (parent + all sub-categories)
+    const inTree     = products.filter(p => treeSlugSet.has(p.category) || (p.secondaryCategory && treeSlugSet.has(p.secondaryCategory)))
+    const primary    = inTree.filter(p => p.category === activeCategory)
+    const subPrimary = inTree.filter(p => p.category !== activeCategory && treeSlugSet.has(p.category))
+    const secondary  = inTree.filter(p => !treeSlugSet.has(p.category))
+    return [...primary, ...subPrimary, ...secondary]
+  }, [products, activeCategory, activeSubCategory, treeSlugSet])
+
   const getCategoryColor = (slug: string) =>
     categories.find(c => c.slug === slug)?.color ?? 'from-violet-400 to-purple-500'
 
   const getCategoryName = (slug: string) =>
-    categories.find(c => c.slug === slug)?.name ?? slug.replace('-', ' ')
-
-  const filtered = activeCategory === 'all'
-    ? products
-    : products.filter(p => p.category === activeCategory || p.secondaryCategory === activeCategory)
+    categories.find(c => c.slug === slug)?.name ?? slug.replace(/-/g, ' ')
 
   const handleAddToCart = (product: Product, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     addItem({ productId: product.id, productName: product.name, price: product.price, quantity: 1, imageUrl: product.imageUrl, category: product.category })
     toast.success(`${product.name} added to cart!`)
+  }
+
+  const selectTopLevel = (slug: string) => {
+    setActiveCategory(slug)
+    setActiveSubCategory(null)
   }
 
   return (
@@ -80,30 +136,88 @@ export default function ProductsClient() {
             </div>
           ) : (
             <>
-              {categories.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-8 justify-center">
-                  <button
-                    onClick={() => setActiveCategory('all')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeCategory === 'all' ? 'bg-violet-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-violet-300 hover:text-violet-600'}`}
-                  >
-                    All Products
-                  </button>
-                  {categories.map(cat => (
+              {/* ── Top-level category filter ── */}
+              {topLevel.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-2 justify-center">
                     <button
-                      key={cat.id}
-                      onClick={() => setActiveCategory(cat.slug)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${activeCategory === cat.slug ? 'bg-violet-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-violet-300 hover:text-violet-600'}`}
+                      onClick={() => selectTopLevel('all')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeCategory === 'all' ? 'bg-violet-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-violet-300 hover:text-violet-600'}`}
                     >
-                      {cat.imageUrl && (
+                      All Products
+                    </button>
+                    {topLevel.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => selectTopLevel(cat.slug)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${activeCategory === cat.slug ? 'bg-violet-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:border-violet-300 hover:text-violet-600'}`}
+                      >
+                        {cat.imageUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={cat.imageUrl} alt={cat.name} className="w-5 h-5 rounded-full object-cover" />
+                        )}
+                        {cat.name}
+                        {getChildren(cat.id).length > 0 && (
+                          <ChevronRight className={`w-3.5 h-3.5 transition-transform ${activeCategory === cat.slug ? 'rotate-90' : ''}`} />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Sub-category chips ── */}
+              {subCats.length > 0 && activeCategory !== 'all' && (
+                <div className="flex flex-wrap gap-2 justify-center mb-6 pb-4 border-b border-gray-200">
+                  <button
+                    onClick={() => setActiveSubCategory(null)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${activeSubCategory === null ? 'bg-violet-100 text-violet-700 border-2 border-violet-400' : 'bg-white text-gray-500 border border-gray-200 hover:border-violet-300 hover:text-violet-600'}`}
+                  >
+                    All {getCategoryName(activeCategory)}
+                  </button>
+                  {subCats.map(sub => (
+                    <button
+                      key={sub.id}
+                      onClick={() => setActiveSubCategory(sub.slug)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${activeSubCategory === sub.slug ? 'bg-violet-100 text-violet-700 border-2 border-violet-400' : 'bg-white text-gray-500 border border-gray-200 hover:border-violet-300 hover:text-violet-600'}`}
+                    >
+                      {sub.imageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={cat.imageUrl} alt={cat.name} className="w-5 h-5 rounded-full object-cover" />
+                        <img src={sub.imageUrl} alt={sub.name} className="w-4 h-4 rounded-full object-cover" />
                       )}
-                      {cat.name}
+                      {sub.name}
                     </button>
                   ))}
                 </div>
               )}
 
+              {/* ── Active filter breadcrumb ── */}
+              {activeCategory !== 'all' && (
+                <div className="flex items-center gap-1.5 text-sm text-gray-400 mb-5 justify-center">
+                  <span
+                    className="hover:text-violet-600 cursor-pointer font-medium"
+                    onClick={() => selectTopLevel('all')}
+                  >
+                    All Products
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                  <span
+                    className={`font-medium ${activeSubCategory ? 'hover:text-violet-600 cursor-pointer' : 'text-violet-700'}`}
+                    onClick={() => activeSubCategory && setActiveSubCategory(null)}
+                  >
+                    {getCategoryName(activeCategory)}
+                  </span>
+                  {activeSubCategory && (
+                    <>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                      <span className="text-violet-700 font-medium">{getCategoryName(activeSubCategory)}</span>
+                    </>
+                  )}
+                  <span className="ml-1 text-gray-300">({filtered.length})</span>
+                </div>
+              )}
+
+              {/* ── Products grid ── */}
               {filtered.length === 0 ? (
                 <div className="text-center py-16 text-gray-400">
                   <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -124,9 +238,7 @@ export default function ProductsClient() {
                         <p className="text-gray-500 text-sm leading-relaxed mb-4 flex-1 line-clamp-2">{product.description}</p>
                         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                           <div>
-                            <div className="text-xs text-gray-400">
-                              {product.variants?.length ? 'From' : 'Price'}
-                            </div>
+                            <div className="text-xs text-gray-400">{product.variants?.length ? 'From' : 'Price'}</div>
                             <div className="text-violet-700 font-bold text-lg">PKR {product.price.toLocaleString()}</div>
                           </div>
                           <Button size="sm" onClick={e => handleAddToCart(product, e)} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
