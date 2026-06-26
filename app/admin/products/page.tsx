@@ -193,7 +193,7 @@ function ProductForm({ initial, title, categories, onSave, onCancel, saving }: {
                 ? <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-2.5">
                     No categories. <Link href="/admin/categories" className="underline font-semibold">Add first →</Link>
                   </p>
-                : <Select value={f.category} onValueChange={v => set('category', v ?? '')}>
+                : <Select value={f.category} onValueChange={v => set('category', v || '')}>
                     <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                     <SelectContent>
                       {categories.map(c => <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>)}
@@ -209,7 +209,10 @@ function ProductForm({ initial, title, categories, onSave, onCancel, saving }: {
               <Label className="font-semibold">Secondary Category <span className="font-normal text-gray-400">(optional)</span></Label>
               <Select
                 value={f.secondaryCategory || '__none__'}
-                onValueChange={v => set('secondaryCategory', v === '__none__' ? '' : v)}
+                onValueChange={v => {
+                  const val = (v && v !== '__none__') ? v : ''
+                  set('secondaryCategory', val)
+                }}
               >
                 <SelectTrigger><SelectValue placeholder="None (product belongs to one category)" /></SelectTrigger>
                 <SelectContent>
