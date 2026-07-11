@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCart } from '@/contexts/CartContext'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import {
-  Printer, ShoppingCart, Menu, LogOut,
+  ShoppingCart, Menu, LogOut,
   Package, Home, Info, Phone, Layers,
   LayoutDashboard, Settings, UserCircle, ChevronDown,
 } from 'lucide-react'
@@ -65,9 +66,13 @@ export default function Header() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-            <Printer className="w-5 h-5 text-white" />
-          </div>
+          <Image
+            src="/logo.jpg"
+            alt="DPM Printing Center logo"
+            width={36}
+            height={36}
+            className="w-9 h-9 rounded-full shadow-lg group-hover:scale-105 transition-transform"
+          />
           <div className="hidden sm:block">
             <div className="text-white font-bold text-lg leading-none">DPM Printing</div>
             <div className="text-orange-300 text-xs font-medium">Center</div>
@@ -190,9 +195,13 @@ export default function Header() {
 
             <SheetContent side="right" className="bg-violet-950 border-white/10 text-white w-72">
               <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
-                  <Printer className="w-4 h-4 text-white" />
-                </div>
+                <Image
+                  src="/logo.jpg"
+                  alt="DPM Printing Center logo"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded-full"
+                />
                 <span className="font-bold text-lg">DPM Printing</span>
               </div>
 

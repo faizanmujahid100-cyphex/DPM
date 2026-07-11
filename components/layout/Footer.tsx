@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Printer, Phone, Mail, MapPin, MessageCircle, Globe, AtSign } from 'lucide-react'
+import Image from 'next/image'
+import { Phone, Mail, MapPin, MessageCircle, Globe, AtSign } from 'lucide-react'
 import { getContactInfo, DEFAULT_CONTACT } from '@/lib/firestore'
 import { ContactInfo } from '@/types'
 
@@ -27,9 +28,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
-                <Printer className="w-5 h-5 text-white" />
-              </div>
+              <Image
+                src="/logo.jpg"
+                alt="DPM Printing Center logo"
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-full"
+              />
               <div>
                 <div className="font-bold text-xl">DPM Printing Center</div>
                 <div className="text-orange-300 text-sm">Your Design. Our Craft.</div>
