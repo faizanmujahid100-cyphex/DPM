@@ -50,7 +50,7 @@ export default function SuperAdminAdminsPage() {
   const load = async () => {
     try {
       const users = await getAllUsers()
-      setAdmins(users.filter(u => u.role === 'admin' || u.role === 'superadmin'))
+      setAdmins(users.filter(u => u.role === 'admin'))
     } catch {}
     setLoading(false)
   }
@@ -133,28 +133,22 @@ export default function SuperAdminAdminsPage() {
                 <div className="text-white/70 text-sm truncate">{admin.email}</div>
                 <Badge className="mt-1 bg-white/20 text-white border-white/30 text-xs gap-1">
                   <ShieldCheck className="w-3 h-3" />
-                  {admin.role === 'superadmin' ? 'Super Admin' : 'Admin'}
+                  Admin
                 </Badge>
               </div>
             </div>
 
             <div className="p-4 flex items-center justify-between">
-              {admin.uid === user?.uid ? (
-                <span className="text-xs text-gray-400">This is you</span>
-              ) : admin.role === 'superadmin' ? (
-                <span className="text-xs text-gray-400">Super admins cannot be removed</span>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={removing === admin.uid}
-                  onClick={() => handleRemoveAdmin(admin)}
-                  className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 gap-2"
-                >
-                  <UserMinus className="w-4 h-4" />
-                  {removing === admin.uid ? 'Removing...' : 'Remove Admin'}
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={removing === admin.uid}
+                onClick={() => handleRemoveAdmin(admin)}
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 gap-2"
+              >
+                <UserMinus className="w-4 h-4" />
+                {removing === admin.uid ? 'Removing...' : 'Remove Admin'}
+              </Button>
             </div>
           </div>
         ))}
