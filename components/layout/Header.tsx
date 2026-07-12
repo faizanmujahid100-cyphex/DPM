@@ -32,13 +32,13 @@ export default function Header() {
 
   const getDashboardLink = () => {
     if (!user) return '/'
-    if (user.role === 'admin') return '/admin'
+    if (user.role === 'admin' || user.role === 'superadmin') return '/admin'
     if (user.role === 'designer') return '/designer'
     return '/customer'
   }
 
   const roleBadgeClass = () => {
-    if (user?.role === 'admin') return 'bg-red-100 text-red-700'
+    if (user?.role === 'admin' || user?.role === 'superadmin') return 'bg-red-100 text-red-700'
     if (user?.role === 'designer') return 'bg-orange-100 text-orange-700'
     return 'bg-green-100 text-green-700'
   }

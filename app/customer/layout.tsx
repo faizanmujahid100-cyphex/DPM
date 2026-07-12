@@ -22,7 +22,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
   useEffect(() => {
     if (!loading && !user) router.replace('/auth/signin')
-    if (!loading && user && (user.role === 'admin' || user.role === 'designer')) router.replace(`/${user.role}`)
+    if (!loading && user && user.role !== 'customer') router.replace(user.role === 'designer' ? '/designer' : '/admin')
     if (!loading && user && needsProfileComplete) router.replace('/auth/complete-profile')
   }, [user, loading, router, needsProfileComplete])
 

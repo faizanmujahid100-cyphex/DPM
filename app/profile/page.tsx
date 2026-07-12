@@ -59,7 +59,7 @@ export default function ProfilePage() {
 
   const getDashboardLink = () => {
     if (!user) return '/'
-    if (user.role === 'admin') return '/admin'
+    if (user.role === 'admin' || user.role === 'superadmin') return '/admin'
     if (user.role === 'designer') return '/designer'
     return '/customer'
   }

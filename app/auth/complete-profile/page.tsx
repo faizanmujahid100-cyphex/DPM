@@ -36,7 +36,7 @@ export default function CompleteProfilePage() {
       })
       // If profile is already complete, redirect to dashboard
       if (user.profileComplete) {
-        const dest = user.role === 'admin' ? '/admin' : user.role === 'designer' ? '/designer' : '/customer'
+        const dest = user.role === 'admin' || user.role === 'superadmin' ? '/admin' : user.role === 'designer' ? '/designer' : '/customer'
         router.replace(dest)
       }
     }
@@ -65,7 +65,7 @@ export default function CompleteProfilePage() {
         address: form.address.trim(),
         profileComplete: true,
       })
-      const dest = user.role === 'admin' ? '/admin' : user.role === 'designer' ? '/designer' : '/customer'
+      const dest = user.role === 'admin' || user.role === 'superadmin' ? '/admin' : user.role === 'designer' ? '/designer' : '/customer'
       router.replace(dest)
     } catch {
       alert('Failed to save. Please try again.')

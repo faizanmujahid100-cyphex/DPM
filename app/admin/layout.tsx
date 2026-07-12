@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Printer, LayoutDashboard, Package, ShoppingBag, Users, Layers, LogOut, Menu, X, Home, Settings, Tag, ClipboardList, UserCircle2, Phone } from 'lucide-react'
+import { Printer, LayoutDashboard, Package, ShoppingBag, Users, Layers, LogOut, Menu, X, Home, Settings, Tag, ClipboardList, UserCircle2, Phone, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import UserAvatar from '@/components/ui/UserAvatar'
+import { isAdminRole } from '@/types'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -26,12 +27,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
+    if (!loading && (!user || !isAdminRole(user.role))) {
       router.replace('/auth/signin')
     }
   }, [user, loading, router])
 
-  if (loading || !user || user.role !== 'admin') {
+  if (loading || !user || !isAdminRole(user.role)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-violet-950">
         <div className="text-white text-center">
@@ -52,11 +53,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <div>
             <div className="text-white font-bold text-sm">DPM Printing</div>
-            <div className="text-orange-300 text-xs">Admin Panel</div>
+            <div className="text-orange-300 text-xs">{user.role === 'superadmin' ? 'Super Admin Panel' : 'Admin Panel'}</div>
           </div>
         </div>
         <nav className="p-4 space-y-1">
-          {navItems.map(({ href, label, icon: Icon }) => (
+          {(user.role === 'superadmin'
+            ? [...navItems, { href: '/admin/admins', label: 'Admins', icon: ShieldCheck }]
+            : navItems
+          ).map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -102,7 +106,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <UserAvatar name={user.name} photoURL={user.photoURL} className="w-8 h-8 bg-gradient-to-br from-orange-400 to-pink-500" />
             <div className="hidden sm:block">
               <div className="text-sm font-semibold text-gray-900">{user.name}</div>
-              <div className="text-xs text-gray-500">Administrator</div>
+              <div className="text-xs text-gray-500">{user.role === 'superadmin' ? 'Super Administrator' : 'Administrator'}</div>
             </div>
           </div>
         </header>

@@ -1,0 +1,118 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return isSignedIn()
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : null;
+    }
+
+    function isAdmin() {
+      return role() == 'admin' || role() == 'superadmin';
+    }
+
+    function isSuperAdmin() {
+      return role() == 'superadmin';
+    }
+
+    function isDesigner() {
+      return role() == 'designer';
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Public catalog data — anyone can read, only admins can write.
+    match /categories/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /services/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /teamMembers/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /orderFormFields/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Users — each user manages their own profile; admins manage all.
+    // Only the super admin can grant admin roles or change existing roles.
+    match /users/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isSuperAdmin()
+        || ((isOwner(uid) || isAdmin()) && request.resource.data.role in ['customer', 'designer']);
+      allow update: if isSuperAdmin()
+        || ((isOwner(uid) || isAdmin()) && request.resource.data.role == resource.data.role);
+      allow delete: if isAdmin();
+    }
+
+    // Orders — customers own their orders; designers can see/bid on
+    // available work and manage what's assigned to them; admins see all.
+    match /orders/{id} {
+      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
+
+      allow read: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.designerId == request.auth.uid ||
+        (resource.data.status == 'awaiting_bid' && isDesigner()) ||
+        isAdmin()
+      );
+
+      allow update: if isAdmin() || (
+        isSignedIn() && (
+          (resource.data.status == 'awaiting_bid' && isDesigner() && request.resource.data.designerId == request.auth.uid) ||
+          resource.data.designerId == request.auth.uid
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Service requests — same shape as orders.
+    match /serviceRequests/{id} {
+      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
+
+      allow read: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.designerId == request.auth.uid ||
+        (resource.data.status == 'submitted' && isDesigner()) ||
+        isAdmin()
+      );
+
+      allow update: if isAdmin() || (
+        isSignedIn() && (
+          (resource.data.status == 'submitted' && isDesigner() && request.resource.data.designerId == request.auth.uid) ||
+          resource.data.designerId == request.auth.uid
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -44,7 +44,7 @@ async function syncGoogleUser(fbUser: FirebaseUser, role: UserRole = 'customer')
 
 function isProfileIncomplete(u: User | null): boolean {
   if (!u) return false
-  if (u.role === 'admin' || u.role === 'designer') return false
+  if (u.role === 'admin' || u.role === 'superadmin' || u.role === 'designer') return false
   return !u.profileComplete && (!u.phone || !u.address)
 }
 

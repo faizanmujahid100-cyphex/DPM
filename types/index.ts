@@ -1,6 +1,9 @@
 import { Timestamp } from 'firebase/firestore'
 
-export type UserRole = 'admin' | 'designer' | 'customer'
+export type UserRole = 'superadmin' | 'admin' | 'designer' | 'customer'
+
+/** True for roles with access to the admin panel. */
+export const isAdminRole = (role?: UserRole | null) => role === 'admin' || role === 'superadmin'
 
 export interface User {
   uid: string
