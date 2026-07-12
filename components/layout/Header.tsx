@@ -67,7 +67,7 @@ export default function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="DPM Printing Center logo"
             width={36}
             height={36}
@@ -196,7 +196,7 @@ export default function Header() {
             <SheetContent side="right" className="bg-violet-950 border-white/10 text-white w-72">
               <div className="flex items-center gap-2 mb-6">
                 <Image
-                  src="/logo.jpg"
+                  src="/logo.png"
                   alt="DPM Printing Center logo"
                   width={32}
                   height={32}
