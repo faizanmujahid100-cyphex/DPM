@@ -6,12 +6,14 @@ import { Category, Product } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/contexts/CartContext'
-import { ImageIcon, ShoppingCart, Package, ChevronRight, X, FolderOpen } from 'lucide-react'
+import { ImageIcon, ShoppingCart, Package, ChevronRight, X, FolderOpen, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function CategoriesSection() {
   const { addItem } = useCart()
+  const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
   const [products,   setProducts]   = useState<Product[]>([])
   const [loading,    setLoading]    = useState(true)
@@ -56,6 +58,17 @@ export default function CategoriesSection() {
       imageUrl: product.imageUrl, category: product.category,
     })
     toast.success(`${product.name} added to cart!`)
+  }
+
+  const handleBuyNow = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    addItem({
+      productId: product.id, productName: product.name,
+      price: product.price, quantity: 1,
+      imageUrl: product.imageUrl, category: product.category,
+    })
+    router.push('/cart')
   }
 
   if (loading) return (
@@ -220,15 +233,21 @@ export default function CategoriesSection() {
                           <p className="text-gray-500 text-sm leading-relaxed mb-3 flex-1 line-clamp-2">
                             {product.description}
                           </p>
-                          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                          <div className="pt-3 border-t border-gray-100 space-y-2.5">
                             <div>
                               <div className="text-xs text-gray-400">{product.variants?.length ? 'From' : 'Price'}</div>
                               <div className="text-violet-700 font-bold">PKR {product.price.toLocaleString()}</div>
                             </div>
-                            <Button size="sm" onClick={e => handleAddToCart(product, e)}
-                              className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
-                              <ShoppingCart className="w-3.5 h-3.5" /> Add
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={e => handleAddToCart(product, e)}
+                                className="flex-1 bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
+                                <ShoppingCart className="w-3.5 h-3.5" /> Add
+                              </Button>
+                              <Button size="sm" onClick={e => handleBuyNow(product, e)}
+                                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white gap-1.5">
+                                <Zap className="w-3.5 h-3.5" /> Buy Now
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </Link>

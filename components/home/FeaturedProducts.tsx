@@ -8,8 +8,9 @@ import CloudImg from '@/components/ui/CloudImg'
 import { useCart } from '@/contexts/CartContext'
 import { getProducts } from '@/lib/firestore'
 import { Product } from '@/types'
-import { ArrowRight, ShoppingCart, Package } from 'lucide-react'
+import { ArrowRight, ShoppingCart, Package, Zap } from 'lucide-react'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 const gradients: Record<string, string> = {
   'photo-frame': 'from-violet-500 to-purple-600',
@@ -23,6 +24,7 @@ const gradients: Record<string, string> = {
 
 export default function FeaturedProducts() {
   const { addItem } = useCart()
+  const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -51,6 +53,13 @@ export default function FeaturedProducts() {
     e.stopPropagation()
     addItem({ productId: product.id, productName: product.name, price: product.price, quantity: 1, imageUrl: product.imageUrl, category: product.category })
     toast.success(`${product.name} added to cart!`)
+  }
+
+  const handleBuyNow = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    addItem({ productId: product.id, productName: product.name, price: product.price, quantity: 1, imageUrl: product.imageUrl, category: product.category })
+    router.push('/cart')
   }
 
   return (
@@ -83,11 +92,16 @@ export default function FeaturedProducts() {
                 <div className="text-xs text-gray-400 capitalize mb-1">{product.category.replace('-', ' ')}</div>
                 <h3 className="font-bold text-gray-900 mb-1 group-hover:text-violet-700 transition-colors">{product.name}</h3>
                 <p className="text-gray-500 text-sm mb-4 flex-1 line-clamp-2">{product.description}</p>
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <div className="pt-3 border-t border-gray-100 space-y-2.5">
                   <div className="text-violet-700 font-bold">PKR {product.price.toLocaleString()}</div>
-                  <Button size="sm" onClick={e => handleAddToCart(product, e)} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
-                    <ShoppingCart className="w-3.5 h-3.5" /> Add
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={e => handleAddToCart(product, e)} className="flex-1 bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
+                      <ShoppingCart className="w-3.5 h-3.5" /> Add
+                    </Button>
+                    <Button size="sm" onClick={e => handleBuyNow(product, e)} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white gap-1.5">
+                      <Zap className="w-3.5 h-3.5" /> Buy Now
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Link>
