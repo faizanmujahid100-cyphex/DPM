@@ -46,8 +46,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-violet-950 to-slate-900 transform transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex items-center gap-3 p-6 border-b border-white/10">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-violet-950 to-slate-900 transform transition-transform duration-200 lg:translate-x-0 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex items-center gap-3 p-6 border-b border-white/10 shrink-0">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
             <Printer className="w-5 h-5 text-white" />
           </div>
@@ -56,7 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="text-orange-300 text-xs">{user.role === 'superadmin' ? 'Super Admin Panel' : 'Admin Panel'}</div>
           </div>
         </div>
-        <nav className="p-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
           {(user.role === 'superadmin'
             ? [...navItems, { href: '/admin/payments', label: 'Payments', icon: Wallet }, { href: '/admin/admins', label: 'Admins', icon: ShieldCheck }]
             : navItems
@@ -72,7 +72,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
           ))}
         </nav>
-        <div className="absolute bottom-6 left-4 right-4 space-y-1">
+        <div className="shrink-0 p-4 space-y-1 border-t border-white/10">
           <Link href="/" className="flex items-center gap-3 w-full px-3 py-2.5 text-violet-300 hover:text-white hover:bg-white/10 rounded-xl transition-all text-sm font-medium">
             <Home className="w-4 h-4" />
             Back to Site
