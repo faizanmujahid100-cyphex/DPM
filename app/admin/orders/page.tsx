@@ -1,13 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAllOrders, getAllDesigners, updateOrderStatus, reassignOrder } from '@/lib/firestore'
+import { getAllOrders, getAllDesigners, updateOrderStatus, reassignOrder, addOrderPayment } from '@/lib/firestore'
 import { Order, User, OrderStatus } from '@/types'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { ShoppingBag, RefreshCw, User as UserIcon } from 'lucide-react'
+import { ShoppingBag, RefreshCw, User as UserIcon, Wallet, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const statusColors: Record<string, string> = {
@@ -19,9 +22,18 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
+const paymentColors: Record<string, string> = {
+  unpaid: 'bg-red-100 text-red-600',
+  partial: 'bg-orange-100 text-orange-700',
+  paid: 'bg-green-100 text-green-700',
+}
+
 const statusOptions: OrderStatus[] = ['awaiting_bid', 'in_progress', 'quality_check', 'completed', 'cancelled']
 
 export default function AdminOrdersPage() {
+  const { user } = useAuth()
+  const isSuperAdmin = user?.role === 'superadmin'
+
   const [orders, setOrders] = useState<Order[]>([])
   const [designers, setDesigners] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,16 +42,52 @@ export default function AdminOrdersPage() {
   const [selectedDesigner, setSelectedDesigner] = useState('')
   const [reassigning, setReassigning] = useState(false)
 
+  // payment dialog (superadmin)
+  const [paymentOrder, setPaymentOrder] = useState<Order | null>(null)
+  const [payAmount, setPayAmount] = useState('')
+  const [payNote, setPayNote] = useState('')
+  const [savingPayment, setSavingPayment] = useState(false)
+
   const load = async () => {
     try {
       const [o, d] = await Promise.all([getAllOrders(), getAllDesigners()])
       setOrders(o)
       setDesigners(d)
+      return o
     } catch {}
     setLoading(false)
+    return [] as Order[]
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load().finally(() => setLoading(false)) }, [])
+
+  const recordPayment = async (order: Order, amount: number) => {
+    if (!user) return
+    if (amount <= 0) { toast.error('Enter an amount greater than 0.'); return }
+    const remaining = order.total - (order.amountPaid ?? 0)
+    if (amount > remaining) {
+      toast.error(`Amount exceeds remaining balance (PKR ${remaining.toLocaleString()}).`)
+      return
+    }
+    setSavingPayment(true)
+    try {
+      await addOrderPayment(order.id, {
+        amount,
+        note: payNote.trim() || undefined,
+        addedBy: user.uid,
+        addedByName: user.name,
+      })
+      toast.success(`PKR ${amount.toLocaleString()} recorded.`)
+      setPayAmount('')
+      setPayNote('')
+      const fresh = await load()
+      setPaymentOrder(fresh.find(o => o.id === order.id) ?? null)
+    } catch {
+      toast.error('Failed to record payment.')
+    } finally {
+      setSavingPayment(false)
+    }
+  }
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     try {
@@ -103,8 +151,13 @@ export default function AdminOrdersPage() {
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[order.status]}`}>
                     {order.status.replace('_', ' ')}
                   </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${paymentColors[order.paymentStatus ?? 'unpaid']}`}>
+                    {order.paymentStatus === 'paid' ? 'Paid' : order.paymentStatus === 'partial' ? `Partial · PKR ${(order.amountPaid ?? 0).toLocaleString()}/${order.total.toLocaleString()}` : 'Unpaid'}
+                  </span>
                 </div>
-                <div className="text-sm text-gray-500 mb-1">{order.items.length} item(s) · PKR {order.total.toLocaleString()}</div>
+                <div className="text-sm text-gray-500 mb-1">
+                  {order.items.length} item(s) · PKR {order.total.toLocaleString()} · Payment ID: <span className="font-mono font-semibold text-gray-700">#{order.id.slice(-8).toUpperCase()}</span>
+                </div>
                 {order.designerName && (
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <UserIcon className="w-3 h-3" />
@@ -137,6 +190,16 @@ export default function AdminOrdersPage() {
                 >
                   <RefreshCw className="w-3 h-3" /> Reassign
                 </Button>
+                {isSuperAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs text-violet-700 border-violet-200 hover:bg-violet-50"
+                    onClick={() => { setPaymentOrder(order); setPayAmount(''); setPayNote('') }}
+                  >
+                    <Wallet className="w-3 h-3" /> Payment
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -171,6 +234,100 @@ export default function AdminOrdersPage() {
               {reassigning ? 'Reassigning...' : 'Reassign'}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Payment dialog (superadmin) ── */}
+      <Dialog open={!!paymentOrder} onOpenChange={o => !o && setPaymentOrder(null)}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-violet-600" /> Order Payment
+            </DialogTitle>
+          </DialogHeader>
+          {paymentOrder && (() => {
+            const paid = paymentOrder.amountPaid ?? 0
+            const remaining = Math.max(0, paymentOrder.total - paid)
+            return (
+              <div className="space-y-4 mt-2">
+                <div className="p-3.5 bg-gray-50 rounded-xl text-sm space-y-1">
+                  <div className="flex justify-between"><span className="text-gray-500">Customer</span><span className="font-semibold text-gray-800">{paymentOrder.customerName}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Payment ID</span><span className="font-mono font-bold text-violet-700">#{paymentOrder.id.slice(-8).toUpperCase()}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Total</span><span className="font-semibold text-gray-800">PKR {paymentOrder.total.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Paid</span><span className="font-semibold text-green-600">PKR {paid.toLocaleString()}</span></div>
+                  <div className="flex justify-between border-t border-gray-200 pt-1 mt-1"><span className="text-gray-500">Remaining</span><span className={`font-bold ${remaining > 0 ? 'text-orange-600' : 'text-green-600'}`}>PKR {remaining.toLocaleString()}</span></div>
+                </div>
+
+                {remaining === 0 ? (
+                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 font-semibold">
+                    <CheckCircle2 className="w-4 h-4" /> This order is fully paid.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label>Amount Received (PKR)</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={remaining}
+                        placeholder={`Up to ${remaining.toLocaleString()}`}
+                        value={payAmount}
+                        onChange={e => setPayAmount(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Note (optional)</Label>
+                      <Input
+                        placeholder="e.g. JazzCash TRX ID, screenshot verified"
+                        value={payNote}
+                        onChange={e => setPayNote(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => recordPayment(paymentOrder, Number(payAmount))}
+                        disabled={savingPayment || !payAmount}
+                        className="flex-1 bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
+                      >
+                        <Wallet className="w-4 h-4" />
+                        {savingPayment ? 'Saving...' : 'Add Payment'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => recordPayment(paymentOrder, remaining)}
+                        disabled={savingPayment}
+                        className="flex-1 gap-1.5 text-green-700 border-green-200 hover:bg-green-50"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        Mark Fully Paid
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {(paymentOrder.payments?.length ?? 0) > 0 && (
+                  <div>
+                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Payment History</div>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {paymentOrder.payments!.map((p, i) => (
+                        <div key={i} className="flex items-start justify-between gap-3 p-2.5 bg-gray-50 rounded-lg text-xs">
+                          <div className="min-w-0">
+                            <div className="font-bold text-gray-800">PKR {p.amount.toLocaleString()}</div>
+                            <div className="text-gray-400">
+                              by {p.addedByName}
+                              {p.date?.toDate ? ` · ${p.date.toDate().toLocaleDateString()}` : ''}
+                            </div>
+                            {p.note && <div className="text-gray-500 mt-0.5">{p.note}</div>}
+                          </div>
+                          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </DialogContent>
       </Dialog>
     </div>

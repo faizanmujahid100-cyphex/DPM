@@ -10,9 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { createOrder, getOrderFormFields } from '@/lib/firestore'
-import { OrderFormField } from '@/types'
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, AlertCircle } from 'lucide-react'
+import { createOrder, getOrderFormFields, getActivePaymentMethods, getPaymentSettings } from '@/lib/firestore'
+import { OrderFormField, PaymentMethod, PaymentSettings } from '@/types'
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, AlertCircle, Wallet, Copy, MessageCircle, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { useState as useLocalState } from 'react'
 import { toast } from 'sonner'
@@ -26,6 +26,19 @@ export default function CartPage() {
   const [formFields, setFormFields] = useState<OrderFormField[]>([])
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
   const [placing, setPlacing] = useState(false)
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null)
+
+  useEffect(() => {
+    getActivePaymentMethods().then(setPaymentMethods).catch(() => {})
+    getPaymentSettings().then(setPaymentSettings).catch(() => {})
+  }, [])
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => toast.success('Copied to clipboard!'))
+      .catch(() => toast.error('Failed to copy.'))
+  }
 
   useEffect(() => {
     getOrderFormFields().then(fields => {
@@ -84,7 +97,7 @@ export default function CartPage() {
 
     setPlacing(true)
     try {
-      await createOrder({
+      const orderId = await createOrder({
         customerId: user.uid,
         customerName: fieldValues['name'] || user.name,
         customerEmail: fieldValues['email'] || user.email,
@@ -94,7 +107,7 @@ export default function CartPage() {
         formData: fieldValues,
       })
       clearCart()
-      toast.success('Order placed! A designer will be assigned soon.')
+      toast.success(`Order placed! Your Payment ID is #${orderId.slice(-8).toUpperCase()} — send your payment screenshot with this ID.`, { duration: 10000 })
       router.push('/customer/orders')
     } catch {
       toast.error('Failed to place order. Please try again.')
@@ -191,6 +204,70 @@ export default function CartPage() {
                   <span className="text-violet-700">PKR {total.toLocaleString()}</span>
                 </div>
               </div>
+
+              {/* Payment methods */}
+              {paymentMethods.length > 0 && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+                    <Wallet className="w-5 h-5 text-violet-600" /> Payment Methods
+                  </h2>
+                  <p className="text-gray-400 text-xs mb-4">Pay using any method below, then send us your payment screenshot.</p>
+
+                  <div className="space-y-3">
+                    {paymentMethods.map(m => (
+                      <div key={m.id} className="p-3.5 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="font-bold text-gray-900 text-sm mb-1">{m.name}</div>
+                        {m.accountName && (
+                          <div className="text-xs text-gray-500 mb-0.5">Account: <span className="font-semibold text-gray-700">{m.accountName}</span></div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono font-bold text-violet-700">{m.accountNumber}</span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(m.accountNumber)}
+                            className="p-1 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded transition-colors"
+                            title="Copy number"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        {m.instructions && <p className="text-xs text-gray-400 mt-1">{m.instructions}</p>}
+                        {m.qrCodeUrl && (
+                          <div className="mt-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={m.qrCodeUrl} alt={`${m.name} QR code`} className="w-32 h-32 rounded-lg border border-gray-200 object-contain bg-white" />
+                            <p className="text-[11px] text-gray-400 mt-1">Scan to pay</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {paymentSettings && (paymentSettings.whatsapp || paymentSettings.email) && (
+                    <div className="mt-4 p-3.5 bg-violet-50 rounded-xl border border-violet-100 text-xs text-violet-800 space-y-2">
+                      <p className="font-semibold">{paymentSettings.instructions || 'After paying, send a screenshot of your payment along with your Payment ID so we can verify it.'}</p>
+                      <p className="text-violet-600">Your Payment ID will be shown after you place the order (also in My Orders).</p>
+                      <div className="flex flex-col gap-1.5 pt-1">
+                        {paymentSettings.whatsapp && (
+                          <a
+                            href={`https://wa.me/${paymentSettings.whatsapp.replace(/\D/g, '').replace(/^0/, '92')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 font-semibold text-green-700 hover:underline"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" /> WhatsApp: {paymentSettings.whatsapp}
+                          </a>
+                        )}
+                        {paymentSettings.email && (
+                          <a href={`mailto:${paymentSettings.email}`} className="flex items-center gap-1.5 font-semibold text-violet-700 hover:underline">
+                            <Mail className="w-3.5 h-3.5" /> Email: {paymentSettings.email}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Dynamic order form */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">

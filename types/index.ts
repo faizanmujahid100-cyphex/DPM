@@ -74,6 +74,36 @@ export interface CartItem {
 
 export type OrderStatus = 'pending' | 'awaiting_bid' | 'in_progress' | 'quality_check' | 'completed' | 'cancelled'
 
+export type PaymentStatus = 'unpaid' | 'partial' | 'paid'
+
+/** A payment method customers can use to pay (JazzCash, EasyPaisa, bank, etc.) */
+export interface PaymentMethod {
+  id: string
+  name: string            // e.g. "JazzCash"
+  accountName: string     // account holder name
+  accountNumber: string   // number / IBAN
+  qrCodeUrl?: string
+  instructions?: string
+  active: boolean
+  createdAt: Timestamp
+}
+
+/** Where customers send their payment screenshots for verification. */
+export interface PaymentSettings {
+  whatsapp: string
+  email: string
+  instructions: string
+}
+
+/** A single (possibly partial) payment recorded against an order. */
+export interface PaymentRecord {
+  amount: number
+  note?: string
+  addedBy: string       // admin uid
+  addedByName: string
+  date: Timestamp
+}
+
 export interface Order {
   id: string
   customerId: string
@@ -87,6 +117,9 @@ export interface Order {
   designerName?: string
   designerProgress?: number
   notes?: string
+  paymentStatus?: PaymentStatus
+  amountPaid?: number
+  payments?: PaymentRecord[]
   createdAt: Timestamp
   updatedAt: Timestamp
 }

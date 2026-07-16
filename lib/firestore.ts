@@ -13,9 +13,10 @@ import {
   onSnapshot,
   runTransaction,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import { User, Category, Product, Service, Order, ServiceRequest, OrderFormField, OrderStatus, ServiceRequestStatus, TeamMember, ContactInfo } from '@/types'
+import { User, Category, Product, Service, Order, ServiceRequest, OrderFormField, OrderStatus, ServiceRequestStatus, TeamMember, ContactInfo, PaymentMethod, PaymentSettings, PaymentRecord, PaymentStatus } from '@/types'
 
 // ── Order Form Fields ──────────────────────────────────────────────────────────
 
@@ -95,6 +96,68 @@ export const getContactInfo = async (): Promise<ContactInfo> => {
 
 export const updateContactInfo = async (data: Partial<ContactInfo>) => {
   await setDoc(doc(db, 'settings', 'contact'), data, { merge: true })
+}
+
+// Payment Methods
+
+export const getPaymentMethods = async (): Promise<PaymentMethod[]> => {
+  const snap = await getDocs(query(collection(db, 'paymentMethods'), orderBy('createdAt', 'asc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as PaymentMethod))
+}
+
+export const getActivePaymentMethods = async (): Promise<PaymentMethod[]> => {
+  return (await getPaymentMethods()).filter(m => m.active)
+}
+
+export const addPaymentMethod = async (data: Omit<PaymentMethod, 'id' | 'createdAt'>) => {
+  return addDoc(collection(db, 'paymentMethods'), { ...data, createdAt: serverTimestamp() })
+}
+
+export const updatePaymentMethod = async (id: string, data: Partial<Omit<PaymentMethod, 'id' | 'createdAt'>>) => {
+  await setDoc(doc(db, 'paymentMethods', id), data, { merge: true })
+}
+
+export const deletePaymentMethod = async (id: string) => {
+  await deleteDoc(doc(db, 'paymentMethods', id))
+}
+
+// Payment Settings (where customers send payment screenshots)
+
+export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
+  whatsapp: '',
+  email: '',
+  instructions: 'After paying, send a screenshot of your payment along with your Payment ID so we can verify it.',
+}
+
+export const getPaymentSettings = async (): Promise<PaymentSettings> => {
+  const snap = await getDoc(doc(db, 'settings', 'payment'))
+  return snap.exists() ? { ...DEFAULT_PAYMENT_SETTINGS, ...snap.data() } as PaymentSettings : DEFAULT_PAYMENT_SETTINGS
+}
+
+export const updatePaymentSettings = async (data: Partial<PaymentSettings>) => {
+  await setDoc(doc(db, 'settings', 'payment'), data, { merge: true })
+}
+
+// Order payments — records a (possibly partial) payment and keeps
+// amountPaid / paymentStatus consistent with the order total.
+export const addOrderPayment = async (orderId: string, payment: { amount: number; note?: string; addedBy: string; addedByName: string }) => {
+  const ref = doc(db, 'orders', orderId)
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(ref)
+    if (!snap.exists()) throw new Error('Order not found')
+    const order = snap.data() as Order
+    const record: PaymentRecord = {
+      amount: payment.amount,
+      addedBy: payment.addedBy,
+      addedByName: payment.addedByName,
+      date: Timestamp.now(),
+      ...(payment.note ? { note: payment.note } : {}),
+    }
+    const payments = [...(order.payments ?? []), record]
+    const amountPaid = (order.amountPaid ?? 0) + payment.amount
+    const paymentStatus: PaymentStatus = amountPaid >= order.total ? 'paid' : amountPaid > 0 ? 'partial' : 'unpaid'
+    transaction.update(ref, { payments, amountPaid, paymentStatus, updatedAt: serverTimestamp() })
+  })
 }
 
 // Team Members
@@ -220,6 +283,9 @@ export const createOrder = async (data: Omit<Order, 'id' | 'createdAt' | 'update
   const ref = await addDoc(collection(db, 'orders'), {
     ...data,
     status: 'awaiting_bid' as OrderStatus,
+    paymentStatus: 'unpaid' as PaymentStatus,
+    amountPaid: 0,
+    payments: [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })

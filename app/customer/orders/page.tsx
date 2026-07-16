@@ -15,6 +15,12 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
+const paymentColors: Record<string, string> = {
+  unpaid: 'bg-red-100 text-red-600',
+  partial: 'bg-orange-100 text-orange-700',
+  paid: 'bg-green-100 text-green-700',
+}
+
 const statusSteps = ['awaiting_bid', 'in_progress', 'quality_check', 'completed']
 
 export default function CustomerOrdersPage() {
@@ -41,12 +47,17 @@ export default function CustomerOrdersPage() {
                 <ShoppingBag className="w-5 h-5 text-violet-600" />
                 <div>
                   <div className="font-bold text-gray-900 text-sm">Order #{order.id.slice(-8).toUpperCase()}</div>
-                  <div className="text-xs text-gray-400">{order.items.length} item(s) · PKR {order.total.toLocaleString()}</div>
+                  <div className="text-xs text-gray-400">{order.items.length} item(s) · PKR {order.total.toLocaleString()} · Payment ID: <span className="font-mono font-semibold text-gray-600">#{order.id.slice(-8).toUpperCase()}</span></div>
                 </div>
               </div>
-              <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
-                {order.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${paymentColors[order.paymentStatus ?? 'unpaid']}`}>
+                  {order.paymentStatus === 'paid' ? 'Paid' : order.paymentStatus === 'partial' ? 'Partially Paid' : 'Unpaid'}
+                </span>
+                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
+                  {order.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </span>
+              </div>
             </div>
 
             <div className="p-5">
@@ -100,6 +111,20 @@ export default function CustomerOrdersPage() {
                   <span>Total</span>
                   <span className="text-violet-700">PKR {order.total.toLocaleString()}</span>
                 </div>
+                {(order.amountPaid ?? 0) > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm text-green-600 font-medium">
+                      <span>Paid</span>
+                      <span>PKR {(order.amountPaid ?? 0).toLocaleString()}</span>
+                    </div>
+                    {order.total - (order.amountPaid ?? 0) > 0 && (
+                      <div className="flex justify-between text-sm text-orange-600 font-medium">
+                        <span>Remaining</span>
+                        <span>PKR {(order.total - (order.amountPaid ?? 0)).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Meta */}

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Printer, LayoutDashboard, Package, ShoppingBag, Users, Layers, LogOut, Menu, X, Home, Settings, Tag, ClipboardList, UserCircle2, Phone, ShieldCheck } from 'lucide-react'
+import { Printer, LayoutDashboard, Package, ShoppingBag, Users, Layers, LogOut, Menu, X, Home, Settings, Tag, ClipboardList, UserCircle2, Phone, ShieldCheck, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import UserAvatar from '@/components/ui/UserAvatar'
 import { isAdminRole } from '@/types'
@@ -58,7 +58,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         <nav className="p-4 space-y-1">
           {(user.role === 'superadmin'
-            ? [...navItems, { href: '/admin/admins', label: 'Admins', icon: ShieldCheck }]
+            ? [...navItems, { href: '/admin/payments', label: 'Payments', icon: Wallet }, { href: '/admin/admins', label: 'Admins', icon: ShieldCheck }]
             : navItems
           ).map(({ href, label, icon: Icon }) => (
             <Link
