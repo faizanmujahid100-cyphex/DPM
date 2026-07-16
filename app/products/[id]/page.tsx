@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { getProductById, getCategories } from '@/lib/firestore'
 import { Product, Category, ProductVariant } from '@/types'
 import { useCart } from '@/contexts/CartContext'
@@ -9,7 +9,7 @@ import MainLayout from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/button'
 import {
   ShoppingCart, ArrowLeft, Check, Minus, Plus,
-  Package, Star, ChevronRight,
+  Package, Star, ChevronRight, Zap,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -17,6 +17,7 @@ import Link from 'next/link'
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { addItem } = useCart()
+  const router = useRouter()
 
   const [product,    setProduct]    = useState<Product | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -79,6 +80,20 @@ export default function ProductDetailPage() {
       variantLabel: variantSummary || undefined,
     })
     toast.success('Added to cart!')
+  }
+
+  const handleBuyNow = () => {
+    if (!product) return
+    addItem({
+      productId: product.id,
+      productName: product.name,
+      price: unitPrice,
+      quantity,
+      imageUrl: product.imageUrl,
+      category: product.category,
+      variantLabel: variantSummary || undefined,
+    })
+    router.push('/cart')
   }
 
   /* ── loading ── */
@@ -352,6 +367,15 @@ export default function ProductDetailPage() {
                 >
                   <ShoppingCart className="w-5 h-5" />
                   {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                </Button>
+                <Button
+                  onClick={handleBuyNow}
+                  disabled={!product.inStock}
+                  className="w-full text-base font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-xl gap-2.5 shadow-md shadow-orange-100"
+                  style={{ height: '52px' }}
+                >
+                  <Zap className="w-5 h-5" />
+                  Buy Now
                 </Button>
                 <Link href="/cart" className="block">
                   <Button

@@ -1,19 +1,20 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import CloudImg from '@/components/ui/CloudImg'
 import { useCart } from '@/contexts/CartContext'
 import { getProducts, getCategories } from '@/lib/firestore'
 import { Product, Category } from '@/types'
-import { ShoppingCart, Package, ChevronRight } from 'lucide-react'
+import { ShoppingCart, Package, ChevronRight, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
 export default function ProductsClient() {
   const { addItem } = useCart()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const urlCategory = searchParams.get('category') ?? 'all'
 
@@ -100,6 +101,13 @@ export default function ProductsClient() {
     e.stopPropagation()
     addItem({ productId: product.id, productName: product.name, price: product.price, quantity: 1, imageUrl: product.imageUrl, category: product.category })
     toast.success(`${product.name} added to cart!`)
+  }
+
+  const handleBuyNow = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    addItem({ productId: product.id, productName: product.name, price: product.price, quantity: 1, imageUrl: product.imageUrl, category: product.category })
+    router.push('/cart')
   }
 
   const selectTopLevel = (slug: string) => {
@@ -236,14 +244,19 @@ export default function ProductsClient() {
                         <div className="text-xs text-violet-600 font-medium mb-1 capitalize">{getCategoryName(product.category)}</div>
                         <h3 className="font-bold text-gray-900 mb-1 group-hover:text-violet-700 transition-colors">{product.name}</h3>
                         <p className="text-gray-500 text-sm leading-relaxed mb-4 flex-1 line-clamp-2">{product.description}</p>
-                        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div className="pt-3 border-t border-gray-100 space-y-2.5">
                           <div>
                             <div className="text-xs text-gray-400">{product.variants?.length ? 'From' : 'Price'}</div>
                             <div className="text-violet-700 font-bold text-lg">PKR {product.price.toLocaleString()}</div>
                           </div>
-                          <Button size="sm" onClick={e => handleAddToCart(product, e)} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
-                            <ShoppingCart className="w-3.5 h-3.5" /> Add
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={e => handleAddToCart(product, e)} className="flex-1 bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
+                              <ShoppingCart className="w-3.5 h-3.5" /> Add
+                            </Button>
+                            <Button size="sm" onClick={e => handleBuyNow(product, e)} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white gap-1.5">
+                              <Zap className="w-3.5 h-3.5" /> Buy Now
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </Link>
